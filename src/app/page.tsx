@@ -12,6 +12,8 @@ import { AIDialog } from '@/components/AIDialog';
 import { UserInput } from '@/components/UserInput';
 import { DialogueTags } from '@/components/DialogueTags';
 import { useTheme } from '@/components/ThemeProvider';
+import { PipelineCalibration, DraftNode } from '@/components/PipelineCalibration';
+import { extractNodes, commitNodes } from '@/lib/pipeline';
 
 type PageType = 'memory' | 'story' | 'dialogue';
 
@@ -40,6 +42,55 @@ export default function TestPage() {
 		{ id: '2', role: 'assistant' as const, content: '...你又来了。' },
 	]);
 	const { theme, toggleTheme } = useTheme();
+
+	// Pipeline 校准状态
+	const [draftNodes, setDraftNodes] = useState<DraftNode[]>([]);
+	const [pipelineStage, setPipelineStage] = useState<'idle' | 'extracting' | 'calibrating' | 'committing' | 'done'>('idle');
+	const [pipelineError, setPipelineError] = useState<string | null>(null);
+	const [isCommitting, setIsCommitting] = useState(false);
+
+	const handleExtract = async (text: string) => {
+		setPipelineStage('extracting');
+		setPipelineError(null);
+		try {
+			const result = await extractNodes(text);
+			setDraftNodes(result.nodes);
+			setPipelineStage(result.nodes.length > 0 ? 'calibrating' : 'idle');
+		} catch (err) {
+			setPipelineError(err instanceof Error ? err.message : '提取失败');
+			setPipelineStage('idle');
+		}
+	};
+
+	const handleFileDrop = (files: FileList) => {
+		const file = files[0];
+		if (!file) return;
+		const reader = new FileReader();
+		reader.onload = (e) => {
+			const text = e.target?.result as string;
+			if (text) handleExtract(text);
+		};
+		reader.readAsText(file);
+	};
+
+	const handleCommit = async (nodes: DraftNode[]) => {
+		setIsCommitting(true);
+		setPipelineStage('committing');
+		setPipelineError(null);
+		try {
+			await commitNodes(nodes);
+			setPipelineStage('done');
+			setTimeout(() => {
+				setPipelineStage('idle');
+				setDraftNodes([]);
+				setIsCommitting(false);
+			}, 2000);
+		} catch (err) {
+			setPipelineError(err instanceof Error ? err.message : '提交失败');
+			setPipelineStage('calibrating');
+			setIsCommitting(false);
+		}
+	};
 
 	const handleSend = (text: string) => {
 		setAiMessages((prev) => [
@@ -89,9 +140,55 @@ export default function TestPage() {
 			<main className="relative z-10 w-full h-full pt-24">
 				<AnimatePresence mode="wait">
 					{currentPage === 'memory' && (
-						<motion.div key="memory" className="w-full h-full flex flex-col items-center justify-center gap-8 px-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+						<motion.div key="memory" className="w-full h-full flex flex-col items-center justify-center gap-6 px-4 overflow-y-auto pb-8" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
 							<RadarChart traits={[{ label: '理性', value: 70 }, { label: '感性', value: 50 }, { label: '外向', value: 30 }, { label: '内敛', value: 80 }, { label: '决断', value: 60 }, { label: '犹豫', value: 40 }]} subjectName="ELARA" />
-							<TranslucentContainer />
+
+							{pipelineStage === 'idle' && (
+								<TranslucentContainer
+									onFileDrop={handleFileDrop}
+									onPaste={handleExtract}
+									placeholder="拖拽 .txt 文件或粘贴日记文本到这里..."
+								/>
+							)}
+
+							{pipelineStage === 'extracting' && (
+								<motion.div className="text-white/50 text-sm tracking-wider" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+									正在提取记忆节点...
+								</motion.div>
+							)}
+
+							{pipelineStage === 'calibrating' && (
+								<motion.div className="w-full max-w-4xl" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+									<div className="mb-4 text-center">
+										<h3 className="text-white text-lg font-light tracking-wider">校准提取结果</h3>
+										<p className="text-white/40 text-xs mt-1">删除低质量节点、编辑细节、补充遗漏记忆</p>
+									</div>
+									<PipelineCalibration
+										draftNodes={draftNodes}
+										onChange={setDraftNodes}
+										onCommit={handleCommit}
+										isLoading={isCommitting}
+									/>
+								</motion.div>
+							)}
+
+							{pipelineStage === 'committing' && (
+								<motion.div className="text-white/50 text-sm tracking-wider" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+									正在写入数据库...
+								</motion.div>
+							)}
+
+							{pipelineStage === 'done' && (
+								<motion.div className="text-white text-sm tracking-wider" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+									✓ 记忆节点已成功归档
+								</motion.div>
+							)}
+
+							{pipelineError && (
+								<motion.div className="text-red-300/80 text-sm" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+									错误: {pipelineError}
+								</motion.div>
+							)}
 						</motion.div>
 					)}
 					{currentPage === 'story' && (

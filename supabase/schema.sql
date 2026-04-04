@@ -53,6 +53,15 @@ CREATE TABLE IF NOT EXISTS If_Line_Branches (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Conversations表（节点对话历史）
+CREATE TABLE IF NOT EXISTS Conversations (
+    conversation_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    node_id UUID NOT NULL REFERENCES Memory_Nodes(node_id) ON DELETE CASCADE,
+    messages JSONB NOT NULL DEFAULT '[]',
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- ============================================
 -- 3. 创建索引
 -- ============================================
@@ -60,6 +69,7 @@ CREATE INDEX IF NOT EXISTS idx_nodes_user_date ON Memory_Nodes(user_id, event_da
 CREATE INDEX IF NOT EXISTS idx_nodes_salience ON Memory_Nodes(user_id, salience_score);
 CREATE INDEX IF NOT EXISTS idx_clues_node ON Hidden_Clues(node_id);
 CREATE INDEX IF NOT EXISTS idx_branches_parent ON If_Line_Branches(parent_node_id);
+CREATE INDEX IF NOT EXISTS idx_conversations_node ON Conversations(node_id);
 
 -- 向量相似度搜索索引
 CREATE INDEX IF NOT EXISTS idx_nodes_embedding ON Memory_Nodes 
@@ -72,6 +82,7 @@ ALTER TABLE Users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE Memory_Nodes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE Hidden_Clues ENABLE ROW LEVEL SECURITY;
 ALTER TABLE If_Line_Branches ENABLE ROW LEVEL SECURITY;
+ALTER TABLE Conversations ENABLE ROW LEVEL SECURITY;
 
 -- Users表策略
 DROP POLICY IF EXISTS "Users can only access own data" ON Users;
@@ -97,6 +108,15 @@ DROP POLICY IF EXISTS "Users can only access own branches" ON If_Line_Branches;
 CREATE POLICY "Users can only access own branches" ON If_Line_Branches
     FOR ALL USING (
         parent_node_id IN (
+            SELECT node_id FROM Memory_Nodes WHERE user_id = auth.uid()
+        )
+    );
+
+-- Conversations表策略
+DROP POLICY IF EXISTS "Users can only access own conversations" ON Conversations;
+CREATE POLICY "Users can only access own conversations" ON Conversations
+    FOR ALL USING (
+        node_id IN (
             SELECT node_id FROM Memory_Nodes WHERE user_id = auth.uid()
         )
     );
