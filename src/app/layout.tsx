@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { ThemeProvider } from '@/components/ThemeProvider';
-import { Layout } from '@/components/Layout';
 
 // ============================================================
 // Root Layout: 根布局
@@ -22,7 +21,7 @@ export default function RootLayout({
 		<html lang="zh-CN" suppressHydrationWarning>
 			<body>
 				<ThemeProvider>
-					<Layout>{children}</Layout>
+					{children}
 				</ThemeProvider>
 			</body>
 		</html>

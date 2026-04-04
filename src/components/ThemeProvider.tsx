@@ -21,12 +21,11 @@ const STORAGE_KEY = 'echo-tracks-theme';
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
 	const [theme, setThemeState] = useState<Theme>('light');
-	const [mounted, setMounted] = useState(false);
 
 	// 初始化：从 localStorage 或系统偏好读取
 	useEffect(() => {
 		const stored = localStorage.getItem(STORAGE_KEY) as Theme | null;
-		
+
 		if (stored) {
 			setThemeState(stored);
 			updateDocumentClass(stored);
@@ -34,8 +33,6 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 			setThemeState('dark');
 			updateDocumentClass('dark');
 		}
-		
-		setMounted(true);
 	}, []);
 
 	// 更新 document class

@@ -57,7 +57,7 @@ const config: Config = {
 				body: [
 					"PingFang SC",
 					"Microsoft YaHei",
-					sans-serif,
+					"sans-serif",
 				],
 			},
 			
