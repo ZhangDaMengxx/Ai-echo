@@ -2,26 +2,149 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ============================================================
+   全局样式: 温暖琥珀色治愈系主题
+   ============================================================ */
+
+/* 导入手写体字体 */
+@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&family=Dancing+Script:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Zhi+Mang+Xing&display=swap');
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+	/* 浅色模式 - 温暖琥珀色 */
+	--background: #fffbeb;
+	--foreground: #78350f;
+	--surface: #fef3c7;
+	--surface-highlight: #fde68a;
+	--primary: #f59e0b;
+	--primary-hover: #d97706;
+	--accent: #fcd34d;
+	--text-primary: #78350f;
+	--text-secondary: #92400e;
+	--text-muted: #b45309;
+	--border: #d97706;
+	--tape: rgba(254, 243, 199, 0.85);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+.dark {
+	/* 深色模式 - 暖调暗色 */
+	--background: #1a1410;
+	--foreground: #f5e6c8;
+	--surface: #2d2418;
+	--surface-highlight: #3d3020;
+	--primary: #8b6914;
+	--primary-hover: #a67c00;
+	--accent: #d4a574;
+	--text-primary: #f5e6c8;
+	--text-secondary: #e6d5b8;
+	--text-muted: #a09070;
+	--border: #5c4a3a;
+	--tape: rgba(45, 36, 24, 0.9);
+}
+
+/* 基础样式 */
+html {
+	scroll-behavior: smooth;
 }
 
 body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+	color: var(--foreground);
+	background: var(--background);
+	font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+	transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* 手写体类 */
+.font-handwriting {
+	font-family: 'Zhi Mang Xing', 'Ma Shan Zheng', 'Caveat', 'Dancing Script', cursive;
+}
+
+/* 拟物化效果 */
+.paper-texture {
+	background-image: 
+		linear-gradient(90deg, rgba(139, 105, 20, 0.03) 1px, transparent 1px),
+		linear-gradient(rgba(139, 105, 20, 0.03) 1px, transparent 1px);
+	background-size: 20px 20px;
+}
+
+/* 胶带效果 */
+.tape {
+	position: relative;
+}
+
+.tape::before {
+	content: '';
+	position: absolute;
+	inset: -8px -12px;
+	background: var(--tape);
+	transform: rotate(-1deg);
+	z-index: -1;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), inset 0 0 2px rgba(255, 255, 255, 0.3);
+}
+
+/* 拍立得相框 */
+.polaroid {
+	background: white;
+	padding: 12px 12px 40px 12px;
+	box-shadow: 3px 3px 10px rgba(0, 0, 0, 0.15);
+	transform: rotate(-2deg);
+	transition: transform 0.3s ease;
+}
+
+.polaroid:hover {
+	transform: rotate(0deg) scale(1.02);
+}
+
+/* 笔记本线圈装饰 */
+.coil-left {
+	border-left: 3px double var(--border);
+	padding-left: 16px;
+	position: relative;
+}
+
+.coil-left::before {
+	content: '';
+	position: absolute;
+	left: -6px;
+	top: 0;
+	bottom: 0;
+	width: 3px;
+	background: repeating-linear-gradient(
+		to bottom,
+		transparent,
+		transparent 8px,
+		var(--border) 8px,
+		var(--border) 12px
+	);
+}
+
+/* 选中文字样式 */
+::selection {
+	background: var(--accent);
+	color: var(--text-primary);
+}
+
+/* 滚动条样式 */
+::-webkit-scrollbar {
+	width: 8px;
+	height: 8px;
+}
+
+::-webkit-scrollbar-track {
+	background: var(--surface);
+}
+
+::-webkit-scrollbar-thumb {
+	background: var(--border);
+	border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+	background: var(--primary);
 }
 
 @layer utilities {
-  .text-balance {
-    text-wrap: balance;
-  }
+	.text-balance {
+		text-wrap: balance;
+	}
 }
