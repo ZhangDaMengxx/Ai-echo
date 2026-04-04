@@ -4,7 +4,7 @@
 // ============================================================
 
 import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render } from '@testing-library/react';
 import { AIDialog } from '@/components/AIDialog';
 
 const mockMessages = [
@@ -14,19 +14,21 @@ const mockMessages = [
 
 describe('AIDialog', () => {
 	it('应渲染消息列表', () => {
-		render(<AIDialog messages={[...mockMessages]} />);
-		expect(screen.getByText('...没事。只是有点冷。')).toBeDefined();
+		const { container } = render(<AIDialog messages={[...mockMessages]} />);
+		// 使用 textContent 检查而不是 getByText，因为 TypewriterText 将文本分割成多个 span
+		expect(container.textContent).toContain('...没事。只是有点冷。');
 	});
 
 	it('系统消息应有斜体效果', () => {
-		render(<AIDialog messages={[...mockMessages]} />);
-		const systemMsg = screen.getByText('*他静静地坐着，肩膀还带着外场淋雨后的水渍*');
-		expect(systemMsg.className).toContain('italic');
+		const { container } = render(<AIDialog messages={[...mockMessages]} />);
+		const systemMsg = container.querySelector('.italic');
+		expect(systemMsg).toBeDefined();
+		expect(systemMsg?.textContent).toContain('他静静地坐着');
 	});
 
 	it('应渲染AI回复', () => {
-		render(<AIDialog messages={[...mockMessages]} />);
-		expect(screen.getByText('...没事。只是有点冷。')).toBeDefined();
+		const { container } = render(<AIDialog messages={[...mockMessages]} />);
+		expect(container.textContent).toContain('...没事。只是有点冷。');
 	});
 
 	it('应具有模糊背景', () => {

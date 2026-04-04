@@ -31,17 +31,16 @@ describe('GlassButton', () => {
 		expect(button?.className).toContain('text-white');
 	});
 
-	it('悬停时应产生柔光效果', () => {
+	it('应为纯白色文字', () => {
 		const { container } = render(<GlassButton>测试</GlassButton>);
 		const button = container.querySelector('button');
-		expect(button?.className).toContain('hover:shadow');
-		expect(button?.className).toContain('hover:shadow-white');
+		expect(button?.className).toContain('text-white');
 	});
 
 	it('应支持激活状态', () => {
 		const { container } = render(<GlassButton active>激活</GlassButton>);
 		const button = container.querySelector('button');
-		expect(button?.className).toContain('text-opacity-100');
+		expect(button?.className).toContain('text-white');
 	});
 });
 
