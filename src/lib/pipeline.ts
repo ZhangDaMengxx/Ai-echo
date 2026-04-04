@@ -19,18 +19,30 @@ export async function extractNodes(text: string): Promise<{
 	character_base?: CharacterBase;
 	message: string;
 }> {
+	console.log('[Pipeline] Sending extract request, text length:', text.length);
+
 	const res = await fetch('/api/pipeline/extract', {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
 		body: JSON.stringify({ text }),
 	});
 
+	console.log('[Pipeline] Response status:', res.status);
+
 	if (!res.ok) {
-		const err = await res.json().catch(() => ({}));
-		throw new Error(err.error || '提取失败');
+		let errMsg = '提取失败';
+		try {
+			const err = await res.json();
+			errMsg = err.error || err.details || `HTTP ${res.status}`;
+		} catch {
+			errMsg = `HTTP ${res.status}: ${res.statusText}`;
+		}
+		console.error('[Pipeline] Error:', errMsg);
+		throw new Error(errMsg);
 	}
 
 	const data = await res.json();
+	console.log('[Pipeline] Success:', data.message, 'Nodes:', data.nodes?.length);
 
 	// 为每个节点注入前端使用的 id
 	const nodes: DraftNode[] = (data.nodes || []).map(
@@ -49,6 +61,7 @@ export async function extractNodes(text: string): Promise<{
 	return {
 		chunks: data.chunks || 0,
 		nodes,
+		character_base: data.character_base,
 		message: data.message || '提取完成',
 	};
 }

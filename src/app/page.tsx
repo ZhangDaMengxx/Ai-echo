@@ -129,9 +129,16 @@ export default function TestPage() {
 			const result = await extractNodes(text);
 			setDraftNodes(result.nodes);
 			setCharacterBase(result.character_base || null);
-			setPipelineStage(result.nodes.length > 0 ? 'calibrating' : 'idle');
+			if (result.nodes.length === 0) {
+				setPipelineError('未能从文本中提取到有效节点，请尝试粘贴更多内容');
+				setPipelineStage('idle');
+			} else {
+				setPipelineStage('calibrating');
+			}
 		} catch (err) {
-			setPipelineError(err instanceof Error ? err.message : '提取失败');
+			const errorMsg = err instanceof Error ? err.message : '提取失败';
+			console.error('Extract error:', err);
+			setPipelineError(`提取失败: ${errorMsg}。请检查：1.后端服务是否启动 2.网络连接 3.API配置`);
 			setPipelineStage('idle');
 		}
 	};
@@ -139,12 +146,30 @@ export default function TestPage() {
 	const handleFileDrop = (files: FileList) => {
 		const file = files[0];
 		if (!file) return;
+
+		// 检查文件类型
+		if (!file.name.endsWith('.txt')) {
+			setPipelineError('请上传 .txt 格式的文本文件');
+			return;
+		}
+
 		const reader = new FileReader();
+
 		reader.onload = (e) => {
 			const text = e.target?.result as string;
-			if (text) handleExtract(text);
+			if (!text || text.trim().length < 10) {
+				setPipelineError('文件内容太短，请上传包含足够文字的日记');
+				return;
+			}
+			handleExtract(text);
 		};
-		reader.readAsText(file);
+
+		reader.onerror = () => {
+			setPipelineError('文件读取失败，请检查文件是否损坏');
+		};
+
+		// 尝试 UTF-8 读取
+		reader.readAsText(file, 'UTF-8');
 	};
 
 	const handleCommit = async (nodes: DraftNode[]) => {
