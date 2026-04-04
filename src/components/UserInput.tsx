@@ -11,11 +11,13 @@ import { Send } from 'lucide-react';
 interface UserInputProps {
 	onSend: (message: string) => void;
 	placeholder?: string;
+	disabled?: boolean;
 }
 
 export function UserInput({
 	onSend,
 	placeholder = '输入消息...',
+	disabled = false,
 }: UserInputProps) {
 	const [inputValue, setInputValue] = useState('');
 
@@ -67,7 +69,7 @@ export function UserInput({
 				/>
 				<motion.button
 					onClick={handleSend}
-					disabled={!inputValue.trim()}
+					disabled={disabled || !inputValue.trim()}
 					className="
 						w-14 h-14
 						flex items-center justify-center

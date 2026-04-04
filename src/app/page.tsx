@@ -14,10 +14,11 @@ import { DialogueTags } from '@/components/DialogueTags';
 import { useTheme } from '@/components/ThemeProvider';
 import { PipelineCalibration, DraftNode } from '@/components/PipelineCalibration';
 import { extractNodes, commitNodes } from '@/lib/pipeline';
+import { fetchNode, sendChatMessage, ChatMessage } from '@/lib/chat';
 
 type PageType = 'memory' | 'story' | 'dialogue';
 
-const memoryNodes = [
+const mockNodes = [
 	{ id: '1', title: '初遇', date: '2024-01-15', description: '那个下雨的午后' },
 	{ id: '2', title: '误会', date: '2024-03-20', description: '沉默的晚餐' },
 	{ id: '3', title: '和解', date: '2024-06-10', description: '天台上的对话' },
@@ -37,17 +38,88 @@ const dialogueTags = [
 export default function TestPage() {
 	const [currentPage, setCurrentPage] = useState<PageType>('memory');
 	const [emotion, setEmotion] = useState<'calm' | 'angry'>('calm');
-	const [aiMessages, setAiMessages] = useState([
-		{ id: '1', role: 'system' as const, content: '*他静静地坐着，肩膀还带着外场淋雨后的水渍。*' },
-		{ id: '2', role: 'assistant' as const, content: '...你又来了。' },
-	]);
 	const { theme, toggleTheme } = useTheme();
+
+	// Story 页面状态
+	const [storyNodes, setStoryNodes] = useState(mockNodes);
+	const [, setStoryLoading] = useState(false);
+
+	// Dialogue 页面状态
+	const [, setActiveNodeId] = useState<string | null>(null);
+	const [activeNodeData, setActiveNodeData] = useState<{
+		core_event: string
+		npc_state?: { current_emotion?: string; attitude_towards_user?: string }
+		memory_source?: string
+		opening_mode?: string
+	} | null>(null);
+	const [aiMessages, setAiMessages] = useState<ChatMessage[]>([]);
+	const [chatLoading, setChatLoading] = useState(false);
+	const [availableClues, setAvailableClues] = useState<Array<{ clue_id: string; trigger_condition: string; clue_content: string }>>([]);
 
 	// Pipeline 校准状态
 	const [draftNodes, setDraftNodes] = useState<DraftNode[]>([]);
 	const [pipelineStage, setPipelineStage] = useState<'idle' | 'extracting' | 'calibrating' | 'committing' | 'done'>('idle');
 	const [pipelineError, setPipelineError] = useState<string | null>(null);
 	const [isCommitting, setIsCommitting] = useState(false);
+
+	// 加载 Story 节点
+	const loadStoryNodes = async () => {
+		setStoryLoading(true);
+		try {
+			const res = await fetch('/api/nodes?userId=test-user');
+			if (!res.ok) throw new Error('获取失败');
+			const data = await res.json();
+			if (data.nodes && data.nodes.length > 0) {
+				setStoryNodes(
+					data.nodes.map((n: Record<string, unknown>) => ({
+						id: n.node_id as string,
+						title: (n.core_event as string)?.slice(0, 10) || '未命名',
+						date: n.event_date as string,
+						description: n.core_event as string,
+					}))
+				);
+			}
+		} catch {
+			// 失败时保持 mock 数据
+		} finally {
+			setStoryLoading(false);
+		}
+	};
+
+	// 加载节点详情并生成开场白
+	const loadNodeAndStartChat = async (nodeId: string) => {
+		setActiveNodeId(nodeId);
+		setCurrentPage('dialogue');
+		setChatLoading(true);
+
+		try {
+			const { node, clues } = await fetchNode(nodeId);
+			setActiveNodeData(node);
+			setAvailableClues(clues || []);
+
+			// 获取开场白
+			const { reply } = await sendChatMessage({
+				message: '开始对话',
+				conversationHistory: [],
+				availableClues: clues || [],
+				nodeData: node,
+				isFirstRound: true,
+			});
+
+			setAiMessages([
+				{ id: '1', role: 'system', content: `*${node.npc_state?.current_emotion || '平静'}*` },
+				{ id: '2', role: 'assistant', content: reply },
+			]);
+		} catch {
+			// 失败时使用默认消息
+			setAiMessages([
+				{ id: '1', role: 'system', content: '*他静静地坐着，肩膀还带着外场淋雨后的水渍。*' },
+				{ id: '2', role: 'assistant', content: '...你又来了。' },
+			]);
+		} finally {
+			setChatLoading(false);
+		}
+	};
 
 	const handleExtract = async (text: string) => {
 		setPipelineStage('extracting');
@@ -92,11 +164,40 @@ export default function TestPage() {
 		}
 	};
 
-	const handleSend = (text: string) => {
-		setAiMessages((prev) => [
-			...prev,
-			{ id: Date.now().toString(), role: 'assistant', content: `...${text}？让我想想。` },
-		]);
+	const handleSend = async (text: string) => {
+		if (!activeNodeData) return;
+
+		// 先显示用户消息
+		const userMsg: ChatMessage = { id: Date.now().toString(), role: 'user', content: text };
+		setAiMessages((prev) => [...prev, userMsg]);
+		setChatLoading(true);
+
+		try {
+			const { reply, unlockedClues } = await sendChatMessage({
+				message: text,
+				conversationHistory: aiMessages,
+				availableClues,
+				nodeData: activeNodeData,
+				isFirstRound: false,
+			});
+
+			setAiMessages((prev) => [
+				...prev,
+				{ id: (Date.now() + 1).toString(), role: 'assistant', content: reply },
+			]);
+
+			// 如果有解锁的线索，从可用线索中移除
+			if (unlockedClues.length > 0) {
+				setAvailableClues((prev) => prev.filter((c) => !unlockedClues.includes(c.clue_id)));
+			}
+		} catch {
+			setAiMessages((prev) => [
+				...prev,
+				{ id: (Date.now() + 1).toString(), role: 'assistant', content: '...（没有回应）' },
+			]);
+		} finally {
+			setChatLoading(false);
+		}
 	};
 
 	const handleTagClick = (tag: { id: string; label: string; hint: string }) => {
@@ -106,8 +207,8 @@ export default function TestPage() {
 		]);
 	};
 
-	const handleNodeClick = () => {
-		setCurrentPage('dialogue');
+	const handleNodeClick = (nodeId: string) => {
+		loadNodeAndStartChat(nodeId);
 	};
 
 	const handleNavigateToDialogue = () => {
@@ -121,7 +222,7 @@ export default function TestPage() {
 			{/* 顶部导航栏 - 居中在正上方 */}
 			<nav className="absolute top-0 left-0 right-0 z-50 flex justify-center items-center gap-8 pt-6">
 				<GlassButton onClick={() => setCurrentPage('memory')} active={currentPage === 'memory'}>Memory</GlassButton>
-				<GlassButton onClick={() => setCurrentPage('story')} active={currentPage === 'story'}>Story</GlassButton>
+				<GlassButton onClick={() => { setCurrentPage('story'); loadStoryNodes(); }} active={currentPage === 'story'}>Story</GlassButton>
 				<GlassButton onClick={() => setCurrentPage('dialogue')} active={currentPage === 'dialogue'}>Dialogue</GlassButton>
 				<div className="w-px h-6 bg-white/20 mx-2" />
 				<motion.button onClick={() => setEmotion('calm')} className={`px-4 py-2 rounded-full text-sm font-light tracking-wider transition-all ${emotion === 'calm' ? 'bg-white/20 text-white' : 'bg-white/5 text-white/50 hover:bg-white/10'}`} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>平静</motion.button>
@@ -193,7 +294,7 @@ export default function TestPage() {
 					)}
 					{currentPage === 'story' && (
 						<motion.div key="story" className="w-full h-full" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-							<StoryCarousel nodes={memoryNodes} onNodeClick={handleNodeClick} onNavigateToDialogue={handleNavigateToDialogue} subjectName="ELARA" />
+							<StoryCarousel nodes={storyNodes} onNodeClick={(node) => handleNodeClick(node.id)} onNavigateToDialogue={handleNavigateToDialogue} subjectName="ELARA" />
 						</motion.div>
 					)}
 					{currentPage === 'dialogue' && (
@@ -204,10 +305,10 @@ export default function TestPage() {
 							</motion.div>
 							<div className="relative flex justify-center items-center">
 								<DialogueTags tags={dialogueTags} onTagClick={handleTagClick} />
-								<AIDialog messages={aiMessages} characterName="ELARA" />
+								<AIDialog messages={aiMessages.filter((m) => m.role !== 'user') as Array<{ id: string; role: 'system' | 'assistant'; content: string }>} />
 							</div>
 							<motion.div className="mt-8" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
-								<UserInput onSend={handleSend} />
+								<UserInput onSend={handleSend} disabled={chatLoading} />
 							</motion.div>
 						</motion.div>
 					)}
