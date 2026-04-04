@@ -196,13 +196,12 @@ export function RadarChart({
 				})}
 
 				{/* 数据多边形 */}
-				<motion.polygon
+				<polygon
 					points={polygonPath}
 					fill="rgba(255,255,255,0.08)"
 					stroke="rgba(255,255,255,0.6)"
 					strokeWidth="1.5"
-					animate={{ points: polygonPath }}
-					transition={{ duration: 0.1 }}
+					style={{ transition: 'all 0.1s ease-out' }}
 				/>
 
 				{/* 流体球节点 */}

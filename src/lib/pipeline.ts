@@ -6,6 +6,7 @@
 import { DraftNode } from '@/components/PipelineCalibration';
 
 export interface CharacterBase {
+	name: string;
 	style: string;
 	logic: string;
 	dominant_emotions: string[];

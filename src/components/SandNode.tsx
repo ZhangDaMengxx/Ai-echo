@@ -63,35 +63,36 @@ export function SandNode({ title, date, onClick, focused = false }: SandNodeProp
 					style={{ filter: 'drop-shadow(0 0 20px rgba(251,191,36,0.3))' }}
 				>
 					{/* 晶体面 */}
-					<motion.polygon
+					<polygon
 						points="50,5 95,27.5 95,72.5 50,95 5,72.5 5,27.5"
 						fill="rgba(251,191,36,0.1)"
 						stroke="rgba(251,191,36,0.5)"
 						strokeWidth="1"
-						animate={{
+						style={{
+							transition: 'all 0.3s ease-out',
 							strokeOpacity: isHovered ? 0.8 : 0.3,
 							fillOpacity: isHovered ? 0.2 : 0.1,
 						}}
 					/>
 
 					{/* 内部线条 */}
-					<motion.line
+					<line
 						x1="50" y1="5" x2="50" y2="95"
 						stroke="rgba(251,191,36,0.3)"
 						strokeWidth="0.5"
-						animate={{ opacity: isHovered ? 1 : 0.3 }}
+						style={{ transition: 'opacity 0.3s ease-out', opacity: isHovered ? 1 : 0.3 }}
 					/>
-					<motion.line
+					<line
 						x1="5" y1="27.5" x2="95" y2="72.5"
 						stroke="rgba(251,191,36,0.3)"
 						strokeWidth="0.5"
-						animate={{ opacity: isHovered ? 1 : 0.3 }}
+						style={{ transition: 'opacity 0.3s ease-out', opacity: isHovered ? 1 : 0.3 }}
 					/>
-					<motion.line
+					<line
 						x1="95" y1="27.5" x2="5" y2="72.5"
 						stroke="rgba(251,191,36,0.3)"
 						strokeWidth="0.5"
-						animate={{ opacity: isHovered ? 1 : 0.3 }}
+						style={{ transition: 'opacity 0.3s ease-out', opacity: isHovered ? 1 : 0.3 }}
 					/>
 				</svg>
 

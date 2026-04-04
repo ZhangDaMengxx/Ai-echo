@@ -63,6 +63,17 @@ export default function TestPage() {
 	const [pipelineError, setPipelineError] = useState<string | null>(null);
 	const [isCommitting, setIsCommitting] = useState(false);
 
+	// AI 人物名称（从性格基座提取，默认 ELARA）
+	const [aiName, setAiName] = useState('ELARA');
+
+	// 节点详情缓存（防止后端 memoryStore 热重载丢失）
+	const [nodeDetailsMap, setNodeDetailsMap] = useState<Record<string, {
+		core_event: string
+		npc_state?: { current_emotion?: string; attitude_towards_user?: string }
+		memory_source?: string
+		opening_mode?: string
+	}>>({});
+
 	// 加载 Story 节点
 	const loadStoryNodes = async (): Promise<boolean> => {
 		setStoryLoading(true);
@@ -71,14 +82,24 @@ export default function TestPage() {
 			if (!res.ok) throw new Error('获取失败');
 			const data = await res.json();
 			if (data.nodes && data.nodes.length > 0) {
-				setStoryNodes(
-					data.nodes.map((n: Record<string, unknown>) => ({
-						id: n.node_id as string,
-						title: (n.core_event as string)?.slice(0, 10) || '未命名',
-						date: n.event_date as string,
-						description: n.core_event as string,
-					}))
-				);
+				const mapped = data.nodes.map((n: Record<string, unknown>) => ({
+					id: n.node_id as string,
+					title: (n.core_event as string)?.slice(0, 10) || '未命名',
+					date: n.event_date as string,
+					description: n.core_event as string,
+				}));
+				setStoryNodes(mapped);
+				// 缓存完整节点数据，用于后端 fallback
+				const details: Record<string, typeof nodeDetailsMap[string]> = {};
+				data.nodes.forEach((n: Record<string, unknown>) => {
+					details[n.node_id as string] = {
+						core_event: n.core_event as string,
+						npc_state: n.npc_state as { current_emotion?: string; attitude_towards_user?: string },
+						memory_source: n.memory_source as string,
+						opening_mode: n.opening_mode as string,
+					};
+				});
+				setNodeDetailsMap(details);
 				return true;
 			}
 			return false;
@@ -115,11 +136,61 @@ export default function TestPage() {
 				{ id: '2', role: 'assistant', content: reply },
 			]);
 		} catch {
-			// 失败时使用默认消息
-			setAiMessages([
-				{ id: '1', role: 'system', content: '*他静静地坐着，肩膀还带着外场淋雨后的水渍。*' },
-				{ id: '2', role: 'assistant', content: '...你又来了。' },
-			]);
+			// 优先使用前端缓存的节点数据
+			const cachedNode = nodeDetailsMap[nodeId];
+			if (cachedNode) {
+				setActiveNodeData(cachedNode);
+				setAvailableClues([]);
+				try {
+					const { reply } = await sendChatMessage({
+						message: '开始对话',
+						conversationHistory: [],
+						availableClues: [],
+						nodeData: cachedNode,
+						isFirstRound: true,
+					});
+					setAiMessages([
+						{ id: '1', role: 'system', content: `*${cachedNode.npc_state?.current_emotion || '平静'}*` },
+						{ id: '2', role: 'assistant', content: reply },
+					]);
+				} catch {
+					setAiMessages([
+						{ id: '1', role: 'system', content: `*${cachedNode.npc_state?.current_emotion || '平静'}*` },
+						{ id: '2', role: 'assistant', content: cachedNode.core_event || '...你又来了。' },
+					]);
+				}
+			} else {
+				// 如果是 mock 节点，使用本地数据
+				const mockNode = mockNodes.find((n) => n.id === nodeId);
+				if (mockNode) {
+					const localNodeData = {
+						core_event: mockNode.title,
+						npc_state: { current_emotion: '平静', attitude_towards_user: '中性' },
+						memory_source: 'txt_extraction',
+						opening_mode: 'dialogue_driven',
+					};
+					setActiveNodeData(localNodeData);
+					setAvailableClues([]);
+					setAiMessages([
+						{ id: '1', role: 'system', content: `*${localNodeData.npc_state.current_emotion}*` },
+						{ id: '2', role: 'assistant', content: mockNode.description || '...你又来了。' },
+					]);
+				} else {
+					// 失败时使用默认消息，但要确保 activeNodeData 有值，否则无法发消息
+					const fallbackNodeData = {
+						core_event: '回忆片段',
+						npc_state: { current_emotion: '平静', attitude_towards_user: '中性' },
+						memory_source: 'txt_extraction',
+						opening_mode: 'dialogue_driven',
+					};
+					setActiveNodeData(fallbackNodeData);
+					setAvailableClues([]);
+					setAiMessages([
+						{ id: '1', role: 'system', content: '*他静静地坐着，肩膀还带着外场淋雨后的水渍。*' },
+						{ id: '2', role: 'assistant', content: '...你又来了。' },
+					]);
+				}
+			}
 		} finally {
 			setChatLoading(false);
 		}
@@ -132,6 +203,9 @@ export default function TestPage() {
 			const result = await extractNodes(text);
 			setDraftNodes(result.nodes);
 			setCharacterBase(result.character_base || null);
+			if (result.character_base?.name) {
+				setAiName(result.character_base.name);
+			}
 			if (result.nodes.length === 0) {
 				setPipelineError('未能从文本中提取到有效节点，请尝试粘贴更多内容');
 				setPipelineStage('idle');
@@ -273,7 +347,7 @@ export default function TestPage() {
 				<AnimatePresence mode="wait">
 					{currentPage === 'memory' && (
 						<motion.div key="memory" className="w-full h-full flex flex-col items-center justify-center gap-6 px-4 overflow-y-auto pb-8" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-							<RadarChart traits={[{ label: '理性', value: 70 }, { label: '感性', value: 50 }, { label: '外向', value: 30 }, { label: '内敛', value: 80 }, { label: '决断', value: 60 }, { label: '犹豫', value: 40 }]} subjectName="ELARA" />
+							<RadarChart traits={[{ label: '理性', value: 70 }, { label: '感性', value: 50 }, { label: '外向', value: 30 }, { label: '内敛', value: 80 }, { label: '决断', value: 60 }, { label: '犹豫', value: 40 }]} subjectName={aiName} />
 
 							{pipelineStage === 'idle' && (
 								<TranslucentContainer
@@ -304,6 +378,10 @@ export default function TestPage() {
 													<p className="text-white/40 text-xs mb-1">情感逻辑</p>
 													<p className="text-white text-lg font-light">{characterBase.logic}</p>
 												</div>
+											</div>
+											<div className="rounded-xl bg-white/5 p-4 mb-4">
+												<p className="text-white/40 text-xs mb-1">AI 人物名称</p>
+												<p className="text-white text-lg font-light">{characterBase.name || 'ELARA'}</p>
 											</div>
 											<div className="space-y-2 text-sm text-white/60">
 												<p><span className="text-white/40">主要情绪：</span>{characterBase.dominant_emotions.join('、') || '暂无数据'}</p>
@@ -347,14 +425,15 @@ export default function TestPage() {
 					)}
 					{currentPage === 'story' && (
 						<motion.div key="story" className="w-full h-full" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-							<StoryCarousel nodes={storyNodes} onNodeClick={handleNodeClick} subjectName="ELARA" />
+							<StoryCarousel nodes={storyNodes} onNodeClick={handleNodeClick} subjectName={aiName} />
 						</motion.div>
 					)}
 					{currentPage === 'dialogue' && (
 						<motion.div key="dialogue" className="w-full h-full flex flex-col items-center justify-center px-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
 							<motion.div className="mb-6 text-center" initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}>
 								<h2 className="text-white/40 text-xs tracking-[0.4em] mb-1">SUBJECT</h2>
-								<h1 className="text-white text-3xl font-extralight tracking-[0.3em]">{activeNodeData?.core_event?.slice(0, 12) || '回忆片段'}</h1>
+								<h1 className="text-white text-3xl font-extralight tracking-[0.3em]">{aiName}</h1>
+								<h2 className="text-white/60 text-sm font-light tracking-wider mt-1">{activeNodeData?.core_event?.slice(0, 12) || '回忆片段'}</h2>
 								{activeNodeData?.npc_state && (
 									<div className="mt-2 text-xs text-white/40">
 										<span>{activeNodeData.npc_state.current_emotion || '平静'}</span>
