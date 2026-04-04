@@ -64,7 +64,7 @@ export default function TestPage() {
 	const [isCommitting, setIsCommitting] = useState(false);
 
 	// 加载 Story 节点
-	const loadStoryNodes = async () => {
+	const loadStoryNodes = async (): Promise<boolean> => {
 		setStoryLoading(true);
 		try {
 			const res = await fetch('/api/nodes?userId=test-user');
@@ -79,9 +79,12 @@ export default function TestPage() {
 						description: n.core_event as string,
 					}))
 				);
+				return true;
 			}
-		} catch {
-			// 失败时保持 mock 数据
+			return false;
+		} catch (err) {
+			console.error('Load story nodes failed:', err);
+			return false;
 		} finally {
 			setStoryLoading(false);
 		}
@@ -179,6 +182,8 @@ export default function TestPage() {
 		try {
 			await commitNodes(nodes);
 			setPipelineStage('done');
+			// 自动刷新 Story 数据
+			await loadStoryNodes();
 			setTimeout(() => {
 				setPipelineStage('idle');
 				setDraftNodes([]);
