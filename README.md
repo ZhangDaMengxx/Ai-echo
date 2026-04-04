@@ -1,45 +1,37 @@
 # 回音轨迹 - 前端 (Echo Tracks Frontend)
 
-纯前端Next.js项目，调用后端API。
+## 启动顺序（重要！）
+
+### 1. 先启动后端 (Port 3001)
+```bash
+cd echo-tracks-backend
+npm run dev
+# 等待显示: Ready on http://localhost:3001
+```
+
+### 2. 再启动前端 (Port 3000)
+```bash
+cd echo-tracks-frontend
+npm run dev
+# 自动打开: http://localhost:3000
+```
+
+## 端口说明
+
+| 服务 | 端口 | 地址 |
+|------|------|------|
+| 前端 | 3000 | http://localhost:3000 |
+| 后端API | 3001 | http://localhost:3001 |
+
+## 环境变量
+
+```bash
+# .env.local
+NEXT_PUBLIC_API_URL=http://localhost:3001
+```
 
 ## 技术栈
 
 - Next.js 14 + TypeScript + Tailwind CSS
 - Framer Motion (动画)
 - Lucide React (图标)
-
-## 开发
-
-```bash
-npm install
-npm run dev
-# 运行在 http://localhost:3000
-```
-
-## 环境变量
-
-```bash
-NEXT_PUBLIC_API_URL=http://localhost:3001  # 后端API地址
-```
-
-## 部署
-
-```bash
-# 构建
-npm run build
-
-# 部署到Vercel
-vercel --prod
-```
-
-## 项目结构
-
-```
-src/
-├── app/
-│   ├── page.tsx          # 首页（记忆上传）
-│   └── layout.tsx        # 根布局
-├── components/           # 组件（待扩展）
-└── lib/
-    └── api.ts            # API调用封装
-```
