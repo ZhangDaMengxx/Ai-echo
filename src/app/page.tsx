@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Upload, Sparkles } from 'lucide-react'
+import { apiFetch } from '@/lib/api'
 
 export default function Home() {
   const [text, setText] = useState('')
@@ -24,12 +25,10 @@ export default function Home() {
     
     setLoading(true)
     try {
-      const res = await fetch('/api/pipeline/extract', {
+      const data = await apiFetch('/api/pipeline/extract', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text }),
       })
-      const data = await res.json()
       setResult(data)
     } catch (e) {
       console.error(e)
