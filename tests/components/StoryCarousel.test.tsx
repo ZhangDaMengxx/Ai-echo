@@ -19,7 +19,6 @@ describe('StoryCarousel', () => {
 			<StoryCarousel
 				nodes={mockNodes}
 				onNodeClick={() => {}}
-				onNavigateToDialogue={() => {}}
 			/>
 		);
 		expect(screen.getByText('初遇')).toBeDefined();
@@ -32,7 +31,6 @@ describe('StoryCarousel', () => {
 			<StoryCarousel
 				nodes={mockNodes}
 				onNodeClick={() => {}}
-				onNavigateToDialogue={() => {}}
 			/>
 		);
 		expect(screen.getByText('2024-01-15')).toBeDefined();
@@ -44,7 +42,6 @@ describe('StoryCarousel', () => {
 			<StoryCarousel
 				nodes={mockNodes}
 				onNodeClick={(node) => { clickedNodeId = node.id; }}
-				onNavigateToDialogue={() => {}}
 			/>
 		);
 		// 点击第二个节点（默认第一个是active，点击第二个会切换activeIndex）

@@ -240,13 +240,11 @@ export default function TestPage() {
 		]);
 	};
 
-	const handleNodeClick = (nodeId: string) => {
-		loadNodeAndStartChat(nodeId);
+	const handleNodeClick = (node: { id: string; title?: string; description?: string }) => {
+		loadNodeAndStartChat(node.id);
 	};
 
-	const handleNavigateToDialogue = () => {
-		setCurrentPage('dialogue');
-	};
+
 
 	return (
 		<div className="fixed inset-0 overflow-hidden bg-[#0a0a0f]">
@@ -349,14 +347,22 @@ export default function TestPage() {
 					)}
 					{currentPage === 'story' && (
 						<motion.div key="story" className="w-full h-full" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-							<StoryCarousel nodes={storyNodes} onNodeClick={(node) => handleNodeClick(node.id)} onNavigateToDialogue={handleNavigateToDialogue} subjectName="ELARA" />
+							<StoryCarousel nodes={storyNodes} onNodeClick={handleNodeClick} subjectName="ELARA" />
 						</motion.div>
 					)}
 					{currentPage === 'dialogue' && (
 						<motion.div key="dialogue" className="w-full h-full flex flex-col items-center justify-center px-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
 							<motion.div className="mb-6 text-center" initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}>
 								<h2 className="text-white/40 text-xs tracking-[0.4em] mb-1">SUBJECT</h2>
-								<h1 className="text-white text-3xl font-extralight tracking-[0.3em]">ELARA</h1>
+								<h1 className="text-white text-3xl font-extralight tracking-[0.3em]">{activeNodeData?.core_event?.slice(0, 12) || '回忆片段'}</h1>
+								{activeNodeData?.npc_state && (
+									<div className="mt-2 text-xs text-white/40">
+										<span>{activeNodeData.npc_state.current_emotion || '平静'}</span>
+										{activeNodeData.npc_state.attitude_towards_user && (
+											<span> · {activeNodeData.npc_state.attitude_towards_user}</span>
+										)}
+									</div>
+								)}
 							</motion.div>
 							<div className="relative flex justify-center items-center">
 								<DialogueTags tags={dialogueTags} onTagClick={handleTagClick} />

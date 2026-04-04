@@ -17,18 +17,16 @@ interface MemoryNode {
 interface StoryCarouselProps {
 	nodes: MemoryNode[];
 	onNodeClick: (node: MemoryNode) => void;
-	onNavigateToDialogue: () => void;
 	subjectName?: string;
 }
 
 export function StoryCarousel({
 	nodes,
 	onNodeClick,
-	onNavigateToDialogue,
 	subjectName = 'ELARA',
 }: StoryCarouselProps) {
 	const [activeIndex, setActiveIndex] = useState(0);
-	const [isZooming, setIsZooming] = useState(false);
+	const [isZooming] = useState(false);
 	const [isDragging, setIsDragging] = useState(false);
 	const [startX, setStartX] = useState(0);
 
@@ -46,20 +44,14 @@ export function StoryCarousel({
 	const handleNodeClick = useCallback(
 		(node: MemoryNode, index: number) => {
 			if (index === activeIndex) {
-				// 点击的是居中的节点，放大并跳转
-				setIsZooming(true);
+				// 点击的是居中的节点，触发跳转
 				onNodeClick(node);
-				// 延迟后自动跳转到Dialogue
-				setTimeout(() => {
-					onNavigateToDialogue();
-					setIsZooming(false);
-				}, 800);
 			} else {
 				// 点击的是侧边节点，切换到该节点
 				setActiveIndex(index);
 			}
 		},
-		[activeIndex, onNodeClick, onNavigateToDialogue]
+		[activeIndex, onNodeClick]
 	);
 
 	// 拖拽处理
