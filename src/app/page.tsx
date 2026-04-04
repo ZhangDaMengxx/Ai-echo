@@ -13,7 +13,7 @@ import { UserInput } from '@/components/UserInput';
 import { DialogueTags } from '@/components/DialogueTags';
 import { useTheme } from '@/components/ThemeProvider';
 import { PipelineCalibration, DraftNode } from '@/components/PipelineCalibration';
-import { extractNodes, commitNodes } from '@/lib/pipeline';
+import { extractNodes, commitNodes, CharacterBase } from '@/lib/pipeline';
 import { fetchNode, sendChatMessage, ChatMessage } from '@/lib/chat';
 
 type PageType = 'memory' | 'story' | 'dialogue';
@@ -58,6 +58,7 @@ export default function TestPage() {
 
 	// Pipeline 校准状态
 	const [draftNodes, setDraftNodes] = useState<DraftNode[]>([]);
+	const [characterBase, setCharacterBase] = useState<CharacterBase | null>(null);
 	const [pipelineStage, setPipelineStage] = useState<'idle' | 'extracting' | 'calibrating' | 'committing' | 'done'>('idle');
 	const [pipelineError, setPipelineError] = useState<string | null>(null);
 	const [isCommitting, setIsCommitting] = useState(false);
@@ -127,6 +128,7 @@ export default function TestPage() {
 		try {
 			const result = await extractNodes(text);
 			setDraftNodes(result.nodes);
+			setCharacterBase(result.character_base || null);
 			setPipelineStage(result.nodes.length > 0 ? 'calibrating' : 'idle');
 		} catch (err) {
 			setPipelineError(err instanceof Error ? err.message : '提取失败');
@@ -155,6 +157,7 @@ export default function TestPage() {
 			setTimeout(() => {
 				setPipelineStage('idle');
 				setDraftNodes([]);
+				setCharacterBase(null);
 				setIsCommitting(false);
 			}, 2000);
 		} catch (err) {
@@ -259,7 +262,29 @@ export default function TestPage() {
 							)}
 
 							{pipelineStage === 'calibrating' && (
-								<motion.div className="w-full max-w-4xl" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+								<motion.div className="w-full max-w-4xl space-y-6" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+									{/* 人物性格基座展示 */}
+									{characterBase && (
+										<div className="rounded-2xl border border-white/10 bg-white/5 p-6">
+											<h3 className="mb-4 text-center text-white text-lg font-light tracking-wider">人物形象刻画</h3>
+											<div className="grid grid-cols-2 gap-4 mb-4">
+												<div className="rounded-xl bg-white/5 p-4">
+													<p className="text-white/40 text-xs mb-1">表达风格</p>
+													<p className="text-white text-lg font-light">{characterBase.style}</p>
+												</div>
+												<div className="rounded-xl bg-white/5 p-4">
+													<p className="text-white/40 text-xs mb-1">情感逻辑</p>
+													<p className="text-white text-lg font-light">{characterBase.logic}</p>
+												</div>
+											</div>
+											<div className="space-y-2 text-sm text-white/60">
+												<p><span className="text-white/40">主要情绪：</span>{characterBase.dominant_emotions.join('、') || '暂无数据'}</p>
+												<p><span className="text-white/40">核心态度：</span>{characterBase.dominant_attitudes.join('、') || '暂无数据'}</p>
+											</div>
+											<p className="mt-4 text-xs text-white/40 leading-relaxed">{characterBase.summary}</p>
+										</div>
+									)}
+
 									<div className="mb-4 text-center">
 										<h3 className="text-white text-lg font-light tracking-wider">校准提取结果</h3>
 										<p className="text-white/40 text-xs mt-1">删除低质量节点、编辑细节、补充遗漏记忆</p>

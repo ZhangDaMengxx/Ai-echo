@@ -5,9 +5,18 @@
 
 import { DraftNode } from '@/components/PipelineCalibration';
 
+export interface CharacterBase {
+	style: string;
+	logic: string;
+	dominant_emotions: string[];
+	dominant_attitudes: string[];
+	summary: string;
+}
+
 export async function extractNodes(text: string): Promise<{
 	chunks: number;
 	nodes: DraftNode[];
+	character_base?: CharacterBase;
 	message: string;
 }> {
 	const res = await fetch('/api/pipeline/extract', {
