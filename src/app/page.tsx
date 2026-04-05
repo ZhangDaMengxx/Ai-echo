@@ -91,6 +91,8 @@ export default function TestPage() {
 					title: n.core_event?.slice(0, 10) || '未命名',
 					date: n.event_date,
 					description: n.core_event,
+					emotion: n.npc_state?.current_emotion || '平静',
+					salienceScore: n.salience_score,
 				}));
 				setStoryNodes(mapped);
 				// 缓存完整节点数据
