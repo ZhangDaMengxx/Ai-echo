@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useEffect, useRef, useCallback, useState } from 'react';
+import React, { useEffect, useRef, useCallback } from 'react';
+import { useResponsive, getParticleCount, Breakpoint } from '../hooks/useResponsive';
 
 // ============================================================
 // DynamicAtmosphere: 动态背景氛围系统
-// 情绪-色彩映射 + 平滑过渡 + 粒子响应
+// 情绪-色彩映射 + 平滑过渡 + 粒子响应 + 响应式适配
 // ============================================================
 
 export type EmotionType = 
@@ -122,6 +123,9 @@ export function DynamicAtmosphere({
 	const animationRef = useRef<number>();
 	const timeRef = useRef(0);
 	
+	// 响应式支持
+	const { breakpoint } = useResponsive();
+	
 	// 当前颜色状态（用于平滑过渡）
 	const currentColorRef = useRef<[number, number, number]>(
 		EMOTION_THEME_MAP.calm.primary
@@ -131,6 +135,7 @@ export function DynamicAtmosphere({
 	);
 	const transitionStartRef = useRef<number>(0);
 	const isTransitioningRef = useRef(false);
+	const lastBreakpointRef = useRef<Breakpoint>(breakpoint);
 
 	// 初始化粒子
 	const initParticles = useCallback((
@@ -268,11 +273,11 @@ export function DynamicAtmosphere({
 		const handleResize = () => {
 			canvas.width = canvas.offsetWidth;
 			canvas.height = canvas.offsetHeight;
-			const theme = getEmotionTheme(emotion);
+			const particleCount = getParticleCount(breakpoint);
 			particlesRef.current = initParticles(
 				canvas.width,
 				canvas.height,
-				theme.particleCount
+				particleCount
 			);
 		};
 
@@ -282,7 +287,7 @@ export function DynamicAtmosphere({
 		return () => {
 			window.removeEventListener('resize', handleResize);
 		};
-	}, [emotion, initParticles]);
+	}, [breakpoint, initParticles]);
 
 	// 启动动画循环
 	useEffect(() => {
@@ -294,18 +299,19 @@ export function DynamicAtmosphere({
 		};
 	}, [animate]);
 
-	// 情绪变化时重新初始化粒子
+	// 情绪或断点变化时重新初始化粒子
 	useEffect(() => {
 		const canvas = canvasRef.current;
 		if (!canvas) return;
 		
-		const theme = getEmotionTheme(emotion);
+		const particleCount = getParticleCount(breakpoint);
 		particlesRef.current = initParticles(
 			canvas.width,
 			canvas.height,
-			theme.particleCount
+			particleCount
 		);
-	}, [emotion, initParticles]);
+		lastBreakpointRef.current = breakpoint;
+	}, [emotion, breakpoint, initParticles]);
 
 	return (
 		<canvas
