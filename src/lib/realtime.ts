@@ -3,7 +3,7 @@
 // 描述: 线索解锁事件的实时订阅和通知
 // ============================================================
 
-import { supabase } from './supabase';
+import { supabase, supabaseAdmin } from './supabase';
 import type { HiddenClue } from './supabase';
 
 // 订阅句柄类型
@@ -51,25 +51,25 @@ export function subscribeToClueUnlocks(
 				const oldRecord = payload.old as HiddenClue;
 				const newRecord = payload.new as HiddenClue;
 
-				// 只处理从未解锁到解锁的状态变化
+				// 只处理从未解锁到已解锁的状态变化
 				if (!oldRecord.is_unlocked && newRecord.is_unlocked) {
 					console.log('[Realtime] Clue unlocked:', newRecord.clue_id);
 					callback(newRecord);
 				}
 			}
 		)
-		.subscribe((status) => {
-			console.log(`[Realtime] Channel ${channelName} status:`, status);
-		});
+		.subscribe();
 
+	// 保存订阅
 	activeSubscriptions.set(channelName, channel);
+	console.log(`[Realtime] Subscribed to ${channelName}`);
 
 	// 返回取消订阅函数
 	return () => unsubscribeFromClueUnlocks(nodeId);
 }
 
 /**
- * 取消订阅节点的线索解锁事件
+ * 取消特定节点的线索订阅
  * @param nodeId - 节点ID
  */
 export function unsubscribeFromClueUnlocks(nodeId: string): void {
@@ -128,11 +128,10 @@ export function subscribeToAllClueUnlocks(
 				}
 			}
 		)
-		.subscribe((status) => {
-			console.log(`[Realtime] Channel ${channelName} status:`, status);
-		});
+		.subscribe();
 
 	activeSubscriptions.set(channelName, channel);
+	console.log('[Realtime] Subscribed to all clues');
 
 	return () => {
 		const ch = activeSubscriptions.get(channelName);
@@ -141,62 +140,6 @@ export function subscribeToAllClueUnlocks(
 			supabase.removeChannel(ch);
 			activeSubscriptions.delete(channelName);
 		}
-	};
-}
-
-// ============================================================
-// 广播消息（用于跨标签页通信）
-// ============================================================
-
-/**
- * 发送自定义广播消息
- * @param channel - 频道名称
- * @param event - 事件名称
- * @param payload - 消息内容
- */
-export async function broadcastMessage(
-	channel: string,
-	event: string,
-	payload: Record<string, unknown>
-): Promise<void> {
-	const broadcastChannel = supabase.channel(channel);
-
-	await broadcastChannel.subscribe();
-	await broadcastChannel.send({
-		type: 'broadcast',
-		event,
-		payload,
-	});
-
-	// 发送后立即断开（一次性广播）
-	supabase.removeChannel(broadcastChannel);
-}
-
-/**
- * 监听自定义广播消息
- * @param channel - 频道名称
- * @param event - 事件名称
- * @param callback - 消息回调
- * @returns 取消监听函数
- */
-export function listenToBroadcast(
-	channel: string,
-	event: string,
-	callback: (payload: Record<string, unknown>) => void
-): () => void {
-	const broadcastChannel = supabase
-		.channel(channel)
-		.on(
-			'broadcast',
-			{ event },
-			(payload) => {
-				callback(payload.payload as Record<string, unknown>);
-			}
-		)
-		.subscribe();
-
-	return () => {
-		supabase.removeChannel(broadcastChannel);
 	};
 }
 
@@ -221,4 +164,64 @@ export function unsubscribeAll(): void {
  */
 export function getActiveSubscriptionCount(): number {
 	return activeSubscriptions.size;
+}
+
+// ============================================================
+// 后端广播函数（API路由使用）
+// ============================================================
+
+/**
+ * 广播线索解锁事件
+ * @param clue - 已解锁的线索
+ */
+export async function broadcastClueUnlock(clue: HiddenClue): Promise<void> {
+	try {
+		// 使用 Supabase broadcast 功能向所有客户端推送
+		const channel = supabaseAdmin.channel('clue-unlocks')
+
+		await channel.subscribe()
+
+		await channel.send({
+			type: 'broadcast',
+			event: 'clue_unlocked',
+			payload: {
+				clue_id: clue.clue_id,
+				node_id: clue.node_id,
+				clue_content: clue.clue_content,
+				unlocked_at: clue.unlocked_at,
+			},
+		})
+
+		console.log('[Realtime] Broadcasted clue unlock:', clue.clue_id)
+	} catch (error) {
+		console.error('[Realtime] Failed to broadcast:', error)
+	}
+}
+
+/**
+ * 触发数据库更新并通过 Realtime 推送
+ * @param clueId - 线索ID
+ */
+export async function unlockClueAndNotify(clueId: string): Promise<HiddenClue | null> {
+	try {
+		const { data, error } = await supabaseAdmin
+			.from('Hidden_Clues')
+			.update({ is_unlocked: true, unlocked_at: new Date().toISOString() })
+			.eq('clue_id', clueId)
+			.select()
+			.single()
+
+		if (error) {
+			console.error('[Realtime] Failed to unlock clue:', error)
+			return null
+		}
+
+		// 广播解锁事件
+		await broadcastClueUnlock(data as HiddenClue)
+
+		return data as HiddenClue
+	} catch (error) {
+		console.error('[Realtime] Failed to unlock and notify:', error)
+		return null
+	}
 }
