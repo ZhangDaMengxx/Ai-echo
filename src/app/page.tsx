@@ -16,6 +16,7 @@ import { PipelineCalibration, DraftNode } from '@/components/PipelineCalibration
 import { FateChoice } from '@/components/FateChoice';
 import { extractNodes, commitNodes, CharacterBase } from '@/lib/pipeline';
 import { fetchNode, sendChatMessage, ChatMessage } from '@/lib/chat';
+import { localDb } from '@/lib/localDb';
 
 type PageType = 'memory' | 'story' | 'dialogue';
 
@@ -79,29 +80,27 @@ export default function TestPage() {
 		opening_mode?: string
 	}>>({});
 
-	// 加载 Story 节点
+	// 加载 Story 节点（从 IndexedDB 本地存储）
 	const loadStoryNodes = async (): Promise<boolean> => {
 		setStoryLoading(true);
 		try {
-			const res = await fetch('/api/nodes?userId=test-user');
-			if (!res.ok) throw new Error('获取失败');
-			const data = await res.json();
-			if (data.nodes && data.nodes.length > 0) {
-				const mapped = data.nodes.map((n: Record<string, unknown>) => ({
-					id: n.node_id as string,
-					title: (n.core_event as string)?.slice(0, 10) || '未命名',
-					date: n.event_date as string,
-					description: n.core_event as string,
+			const nodes = await localDb.getAllNodes();
+			if (nodes.length > 0) {
+				const mapped = nodes.map((n) => ({
+					id: n.node_id,
+					title: n.core_event?.slice(0, 10) || '未命名',
+					date: n.event_date,
+					description: n.core_event,
 				}));
 				setStoryNodes(mapped);
-				// 缓存完整节点数据，用于后端 fallback
+				// 缓存完整节点数据
 				const details: Record<string, typeof nodeDetailsMap[string]> = {};
-				data.nodes.forEach((n: Record<string, unknown>) => {
-					details[n.node_id as string] = {
-						core_event: n.core_event as string,
-						npc_state: n.npc_state as { current_emotion?: string; attitude_towards_user?: string },
-						memory_source: n.memory_source as string,
-						opening_mode: n.opening_mode as string,
+				nodes.forEach((n) => {
+					details[n.node_id] = {
+						core_event: n.core_event,
+						npc_state: n.npc_state,
+						memory_source: n.memory_source,
+						opening_mode: n.opening_mode,
 					};
 				});
 				setNodeDetailsMap(details);

@@ -1,7 +1,10 @@
 // ============================================================
 // Chat API 客户端
 // 描述: 节点对话相关 API 调用封装
+// 更新: fetchNode 使用 IndexedDB 本地存储
 // ============================================================
+
+import { localDb } from './localDb';
 
 export interface ChatMessage {
 	id: string
@@ -26,12 +29,29 @@ export async function fetchNode(nodeId: string): Promise<{
 		clue_content: string
 	}>
 }> {
-	const res = await fetch(`/api/node/${nodeId}`)
-	if (!res.ok) {
-		const err = await res.json().catch(() => ({}))
-		throw new Error(err.error || '获取节点失败')
+	// 从 IndexedDB 读取节点
+	const node = await localDb.getNodeById(nodeId);
+	if (!node) {
+		throw new Error('节点不存在');
 	}
-	return res.json()
+
+	// 获取关联线索
+	const clues = await localDb.getCluesByNodeId(nodeId);
+
+	return {
+		node: {
+			node_id: node.node_id,
+			core_event: node.core_event,
+			npc_state: node.npc_state,
+			memory_source: node.memory_source,
+			opening_mode: node.opening_mode,
+		},
+		clues: clues.map(c => ({
+			clue_id: c.clue_id,
+			trigger_condition: c.trigger_condition,
+			clue_content: c.clue_content,
+		})),
+	};
 }
 
 export async function sendChatMessage(params: {
