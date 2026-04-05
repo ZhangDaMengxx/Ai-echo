@@ -11,15 +11,22 @@
     "test:run": "vitest run"
   },
   "dependencies": {
+    "@react-three/drei": "^9.92.7",
+    "@react-three/fiber": "^8.15.16",
+    "@react-three/postprocessing": "^2.19.0",
     "@supabase/auth-helpers-nextjs": "^0.15.0",
     "@supabase/supabase-js": "^2.101.1",
+    "@tweenjs/tween.js": "^25.0.0",
     "framer-motion": "^12.38.0",
     "lucide-react": "^1.7.0",
     "next": "14.2.35",
-    "react": "^18",
-    "react-dom": "^18"
+    "postprocessing": "^6.37.2",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "three": "^0.174.0"
   },
   "devDependencies": {
+    "@testing-library/dom": "^9.3.4",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@types/node": "^20",
