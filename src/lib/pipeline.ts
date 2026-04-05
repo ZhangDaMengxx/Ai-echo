@@ -1,9 +1,11 @@
 // ============================================================
 // Pipeline API 客户端
 // 描述: 数据清洗流水线的 extract / commit 调用封装
+// 更新: 使用 IndexedDB 本地存储替代服务器存储
 // ============================================================
 
 import { DraftNode } from '@/components/PipelineCalibration';
+import { localDb, CharacterProfile } from './localDb';
 
 export interface CharacterBase {
 	name: string;
@@ -67,33 +69,46 @@ export async function extractNodes(text: string): Promise<{
 	};
 }
 
-export async function commitNodes(nodes: DraftNode[]): Promise<{
+export async function commitNodes(
+	nodes: DraftNode[],
+	characterBase?: CharacterBase
+): Promise<{
 	success: boolean;
 	nodeCount: number;
 	clueCount: number;
 	nodeIds: string[];
 }> {
-	// 过滤掉前端临时 id，后端会自动生成 UUID
+	// 转换为本地存储格式
 	const payload = nodes.map((node) => ({
-		event_date: node.event_date,
+		event_date: node.event_date || new Date().toISOString().split('T')[0],
 		core_event: node.core_event,
-		npc_state: node.npc_state,
+		npc_state: {
+			current_emotion: node.npc_state?.current_emotion || '平静',
+			attitude_towards_user: node.npc_state?.attitude_towards_user || '中性',
+		},
 		salience_score: node.salience_score,
-		hidden_clues: node.hidden_clues,
-		memory_source: node.memory_source,
-		opening_mode: node.opening_mode,
+		hidden_clues: (node.hidden_clues || []).map(c => ({
+			trigger_condition: c.trigger,
+			clue_content: c.content,
+			is_unlocked: false,
+		})),
+		memory_source: node.memory_source as 'txt_extraction' | 'user_supplement',
+		opening_mode: node.opening_mode as 'action_driven' | 'dialogue_driven',
+		character_name: characterBase?.name,
 	}));
 
-	const res = await fetch('/api/pipeline/commit', {
-		method: 'POST',
-		headers: { 'Content-Type': 'application/json' },
-		body: JSON.stringify({ nodes: payload, userId: 'test-user' }),
-	});
+	// 使用本地 IndexedDB 存储
+	const profile: CharacterProfile | undefined = characterBase ? {
+		...characterBase,
+		global_vibe: 'neutral',
+	} : undefined;
 
-	if (!res.ok) {
-		const err = await res.json().catch(() => ({}));
-		throw new Error(err.error || '提交失败');
-	}
+	const result = await localDb.commitMemoryBatch(payload, profile);
 
-	return res.json();
+	return {
+		success: true,
+		nodeCount: result.nodeIds.length,
+		clueCount: result.clueCount,
+		nodeIds: result.nodeIds,
+	};
 }

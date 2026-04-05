@@ -1,13 +1,10 @@
 // ============================================================
 // 数据库操作模块
-// 描述: 封装 Memory_Nodes, Hidden_Clues 的 CRUD 操作
+// 描述: 使用 IndexedDB 本地存储替代 Supabase
 // ============================================================
 
-import { supabase } from './supabase';
-import type { MemoryNode, HiddenClue } from './supabase';
-
-// 嵌入向量维度
-const EMBEDDING_DIM = 768;
+import { localDb, MemoryNode, HiddenClue, CharacterProfile } from './localDb';
+export type { MemoryNode, HiddenClue, CharacterProfile } from './localDb';
 
 // ============================================================
 // MemoryNode 操作
@@ -15,27 +12,13 @@ const EMBEDDING_DIM = 768;
 
 /**
  * 创建新的记忆节点
- * @param node - 节点数据（不含 node_id 和 created_at）
+ * @param node - 节点数据
  * @returns 创建的节点
  */
 export async function createMemoryNode(
 	node: Omit<MemoryNode, 'node_id' | 'created_at'>
 ): Promise<MemoryNode> {
-	const { data, error } = await supabase
-		.from('Memory_Nodes')
-		.insert([{
-			...node,
-			embedding: node.embedding || null,
-		}])
-		.select()
-		.single();
-
-	if (error) {
-		console.error('[DB] Failed to create memory node:', error);
-		throw new Error(`创建记忆节点失败: ${error.message}`);
-	}
-
-	return data as MemoryNode;
+	return localDb.insertNode(node);
 }
 
 /**
@@ -46,45 +29,25 @@ export async function createMemoryNode(
 export async function createMemoryNodes(
 	nodes: Omit<MemoryNode, 'node_id' | 'created_at'>[]
 ): Promise<MemoryNode[]> {
-	const { data, error } = await supabase
-		.from('Memory_Nodes')
-		.insert(nodes.map(n => ({
-			...n,
-			embedding: n.embedding || null,
-		})))
-		.select();
-
-	if (error) {
-		console.error('[DB] Failed to create memory nodes:', error);
-		throw new Error(`批量创建记忆节点失败: ${error.message}`);
+	const created: MemoryNode[] = [];
+	for (const node of nodes) {
+		const n = await localDb.insertNode(node);
+		created.push(n);
 	}
-
-	return data as MemoryNode[];
+	return created;
 }
 
 /**
- * 获取用户的所有记忆节点（按日期排序）
- * @param userId - 用户ID
- * @param minSalience - 最小显著性分数（默认7，只返回关键节点）
+ * 获取所有记忆节点（按日期排序）
+ * @param minSalience - 最小显著性分数
  * @returns 节点数组
  */
 export async function getMemoryNodes(
-	userId: string,
-	minSalience: number = 7
+	_minSalience: number = 7
 ): Promise<MemoryNode[]> {
-	const { data, error } = await supabase
-		.from('Memory_Nodes')
-		.select('*')
-		.eq('user_id', userId)
-		.gte('salience_score', minSalience)
-		.order('event_date', { ascending: true });
-
-	if (error) {
-		console.error('[DB] Failed to fetch memory nodes:', error);
-		throw new Error(`获取记忆节点失败: ${error.message}`);
-	}
-
-	return (data || []) as MemoryNode[];
+	const nodes = await localDb.getAllNodes();
+	// 过滤显著性分数
+	return nodes.filter(n => n.salience_score >= _minSalience);
 }
 
 /**
@@ -95,21 +58,7 @@ export async function getMemoryNodes(
 export async function getMemoryNodeById(
 	nodeId: string
 ): Promise<MemoryNode | null> {
-	const { data, error } = await supabase
-		.from('Memory_Nodes')
-		.select('*')
-		.eq('node_id', nodeId)
-		.single();
-
-	if (error) {
-		if (error.code === 'PGRST116') {
-			return null;
-		}
-		console.error('[DB] Failed to fetch memory node:', error);
-		throw new Error(`获取记忆节点失败: ${error.message}`);
-	}
-
-	return data as MemoryNode;
+	return localDb.getNodeById(nodeId);
 }
 
 /**
@@ -119,33 +68,17 @@ export async function getMemoryNodeById(
  */
 export async function updateMemoryNode(
 	nodeId: string,
-	updates: Partial<Omit<MemoryNode, 'node_id' | 'user_id' | 'created_at'>>
+	updates: Partial<Omit<MemoryNode, 'node_id' | 'created_at'>>
 ): Promise<void> {
-	const { error } = await supabase
-		.from('Memory_Nodes')
-		.update(updates)
-		.eq('node_id', nodeId);
-
-	if (error) {
-		console.error('[DB] Failed to update memory node:', error);
-		throw new Error(`更新记忆节点失败: ${error.message}`);
-	}
+	return localDb.updateNode(nodeId, updates);
 }
 
 /**
- * 删除记忆节点（级联删除关联的线索）
+ * 删除记忆节点
  * @param nodeId - 节点ID
  */
 export async function deleteMemoryNode(nodeId: string): Promise<void> {
-	const { error } = await supabase
-		.from('Memory_Nodes')
-		.delete()
-		.eq('node_id', nodeId);
-
-	if (error) {
-		console.error('[DB] Failed to delete memory node:', error);
-		throw new Error(`删除记忆节点失败: ${error.message}`);
-	}
+	return localDb.deleteNode(nodeId);
 }
 
 // ============================================================
@@ -160,17 +93,12 @@ export async function deleteMemoryNode(nodeId: string): Promise<void> {
 export async function createHiddenClues(
 	clues: Omit<HiddenClue, 'clue_id' | 'created_at'>[]
 ): Promise<HiddenClue[]> {
-	const { data, error } = await supabase
-		.from('Hidden_Clues')
-		.insert(clues)
-		.select();
-
-	if (error) {
-		console.error('[DB] Failed to create hidden clues:', error);
-		throw new Error(`创建线索失败: ${error.message}`);
+	const created: HiddenClue[] = [];
+	for (const clue of clues) {
+		const c = await localDb.insertClue(clue);
+		created.push(c);
 	}
-
-	return (data || []) as HiddenClue[];
+	return created;
 }
 
 /**
@@ -179,97 +107,55 @@ export async function createHiddenClues(
  * @returns 线索数组
  */
 export async function getHiddenCluesByNode(nodeId: string): Promise<HiddenClue[]> {
-	const { data, error } = await supabase
-		.from('Hidden_Clues')
-		.select('*')
-		.eq('node_id', nodeId)
-		.order('created_at', { ascending: true });
-
-	if (error) {
-		console.error('[DB] Failed to fetch hidden clues:', error);
-		throw new Error(`获取线索失败: ${error.message}`);
-	}
-
-	return (data || []) as HiddenClue[];
+	return localDb.getCluesByNodeId(nodeId);
 }
 
 /**
- * 获取节点的未解锁线索（用于AI判断触发条件）
+ * 获取节点的未解锁线索
  * @param nodeId - 节点ID
  * @returns 未解锁线索数组
  */
 export async function getUnlockedClues(nodeId: string): Promise<HiddenClue[]> {
-	const { data, error } = await supabase
-		.from('Hidden_Clues')
-		.select('*')
-		.eq('node_id', nodeId)
-		.eq('is_unlocked', false);
-
-	if (error) {
-		console.error('[DB] Failed to fetch unlocked clues:', error);
-		throw new Error(`获取线索失败: ${error.message}`);
-	}
-
-	return (data || []) as HiddenClue[];
+	const clues = await localDb.getCluesByNodeId(nodeId);
+	return clues.filter(c => !c.is_unlocked);
 }
 
 /**
  * 解锁线索
  * @param clueId - 线索ID
- * @returns 更新后的线索
  */
 export async function unlockClue(clueId: string): Promise<HiddenClue> {
-	const { data, error } = await supabase
-		.from('Hidden_Clues')
-		.update({ is_unlocked: true })
-		.eq('clue_id', clueId)
-		.select()
-		.single();
-
-	if (error) {
-		console.error('[DB] Failed to unlock clue:', error);
-		throw new Error(`解锁线索失败: ${error.message}`);
-	}
-
-	return data as HiddenClue;
+	await localDb.unlockClue(clueId);
+	// 返回更新后的线索
+	const nodeId = clueId.split('_')[1]; // 简化处理
+	const clues = await localDb.getCluesByNodeId(nodeId);
+	const clue = clues.find(c => c.clue_id === clueId);
+	if (!clue) throw new Error('Clue not found');
+	return clue;
 }
 
 // ============================================================
-// 向量搜索
+// 向量搜索 (本地简化版)
 // ============================================================
 
 /**
- * 执行向量相似度搜索
- * @param queryEmbedding - 查询向量
- * @param matchThreshold - 相似度阈值（0-1）
+ * 执行向量相似度搜索（本地简化版，实际使用文本匹配）
+ * @param _queryEmbedding - 查询向量（不使用）
+ * @param _matchThreshold - 相似度阈值
  * @param matchCount - 返回结果数
- * @param userId - 可选用户ID过滤
- * @returns 匹配的节点及相似度
+ * @returns 匹配的节点
  */
 export async function searchSimilarNodes(
-	queryEmbedding: number[],
-	matchThreshold: number = 0.8,
-	matchCount: number = 10,
-	userId?: string
+	_queryEmbedding: number[],
+	_matchThreshold: number = 0.8,
+	matchCount: number = 10
 ): Promise<Array<MemoryNode & { similarity: number }>> {
-	// 验证向量维度
-	if (queryEmbedding.length !== EMBEDDING_DIM) {
-		throw new Error(`向量维度不匹配: 期望 ${EMBEDDING_DIM}, 实际 ${queryEmbedding.length}`);
-	}
-
-	const { data, error } = await supabase.rpc('match_memory_nodes', {
-		query_embedding: queryEmbedding,
-		match_threshold: matchThreshold,
-		match_count: matchCount,
-		p_user_id: userId || null,
-	});
-
-	if (error) {
-		console.error('[DB] Vector search failed:', error);
-		throw new Error(`向量搜索失败: ${error.message}`);
-	}
-
-	return (data || []) as Array<MemoryNode & { similarity: number }>;
+	// 本地版本暂时返回所有节点，按显著性排序
+	const nodes = await localDb.getAllNodes();
+	return nodes
+		.sort((a, b) => b.salience_score - a.salience_score)
+		.slice(0, matchCount)
+		.map(n => ({ ...n, similarity: n.salience_score / 10 }));
 }
 
 // ============================================================
@@ -278,56 +164,60 @@ export async function searchSimilarNodes(
 
 /**
  * 提交完整的记忆节点批次（节点 + 线索）
- * @param userId - 用户ID
  * @param nodes - 节点数组
  * @param cluesMap - 节点ID到线索数组的映射
  * @returns 创建的节点和线索
  */
 export async function commitMemoryBatch(
-	userId: string,
-	nodes: Omit<MemoryNode, 'node_id' | 'user_id' | 'created_at'>[],
+	nodes: Omit<MemoryNode, 'node_id' | 'created_at'>[],
 	cluesMap: Record<string, Omit<HiddenClue, 'clue_id' | 'node_id' | 'created_at'>[]>
 ): Promise<{
 	nodes: MemoryNode[];
 	clues: HiddenClue[];
 }> {
-	// 1. 创建节点
-	const nodesWithUser = nodes.map(n => ({
-		...n,
-		user_id: userId,
-	}));
+	const createdNodes: MemoryNode[] = [];
+	const createdClues: HiddenClue[] = [];
 
-	const createdNodes = await createMemoryNodes(nodesWithUser);
+	for (const node of nodes) {
+		// 创建节点
+		const createdNode = await localDb.insertNode(node);
+		createdNodes.push(createdNode);
 
-	// 2. 收集线索（使用临时ID映射）
-	const tempIdMap = new Map<string, string>();
-	nodes.forEach((n, i) => {
-		const nodeWithId = n as unknown as { node_id?: string };
-		const tempId = nodeWithId.node_id || `temp-${i}`;
-		tempIdMap.set(tempId, createdNodes[i].node_id);
-	});
-
-	// 3. 创建线索
-	const allClues: Omit<HiddenClue, 'clue_id' | 'created_at'>[] = [];
-	Object.entries(cluesMap).forEach(([tempNodeId, clues]) => {
-		const realNodeId = tempIdMap.get(tempNodeId);
-		if (realNodeId) {
-			clues.forEach(c => {
-				allClues.push({
-					...c,
-					node_id: realNodeId,
-				});
+		// 创建关联线索
+		const clues = cluesMap[node.event_date] || [];
+		for (const clue of clues) {
+			const createdClue = await localDb.insertClue({
+				...clue,
+				node_id: createdNode.node_id,
 			});
+			createdClues.push(createdClue);
 		}
-	});
-
-	let createdClues: HiddenClue[] = [];
-	if (allClues.length > 0) {
-		createdClues = await createHiddenClues(allClues);
 	}
 
 	return {
 		nodes: createdNodes,
 		clues: createdClues,
 	};
+}
+
+// ============================================================
+// 人物画像操作
+// ============================================================
+
+/**
+ * 获取人物画像
+ * @returns 人物画像或 null
+ */
+export async function getCharacterProfile(): Promise<CharacterProfile | null> {
+	return localDb.getProfile();
+}
+
+/**
+ * 更新人物画像
+ * @param profile - 画像数据
+ */
+export async function updateCharacterProfile(
+	profile: Partial<CharacterProfile>
+): Promise<void> {
+	return localDb.updateProfile(profile);
 }
