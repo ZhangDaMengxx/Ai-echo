@@ -261,7 +261,7 @@ export default function TestPage() {
 		setPipelineStage('committing');
 		setPipelineError(null);
 		try {
-			await commitNodes(nodes);
+			await commitNodes(nodes, characterBase || undefined);
 			setPipelineStage('done');
 			// 自动刷新 Story 数据
 			await loadStoryNodes();

@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Echo Tracks - IndexedDB 测试</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #0a0a0f;
+            color: #fff;
+        }
+        h1 { color: #00d4ff; }
+        .section {
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        button {
+            background: #00d4ff;
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 5px;
+            font-weight: bold;
+        }
+        button:hover { background: #33ddff; }
+        button.danger { background: #ff006e; color: #fff; }
+        button.danger:hover { background: #ff3385; }
+        pre {
+            background: rgba(0,0,0,0.3);
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .success { color: #4ade80; }
+        .error { color: #f87171; }
+        .info { color: #60a5fa; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Echo Tracks IndexedDB 测试页</h1>
+    
+    <div class="section">
+        <h2>1. 数据库连接测试</h2>
+        <button onclick="testConnection()">测试连接</button>
+        <div id="connection-result"></div>
+    </div>
+
+    <div class="section">
+        <h2>2. 节点操作测试</h2>
+        <button onclick="insertTestNode()">插入测试节点</button>
+        <button onclick="getAllNodes()">获取所有节点</button>
+        <button onclick="updateTestNode()">更新首个节点</button>
+        <button onclick="deleteTestNode()">删除首个节点</button>
+        <div id="nodes-result"></div>
+    </div>
+
+    <div class="section">
+        <h2>3. 人物画像测试</h2>
+        <button onclick="updateProfile()">更新画像</button>
+        <button onclick="getProfile()">获取画像</button>
+        <div id="profile-result"></div>
+    </div>
+
+    <div class="section">
+        <h2>4. 数据管理</h2>
+        <button class="danger" onclick="clearAllData()">⚠️ 清除所有数据</button>
+        <div id="clear-result"></div>
+    </div>
+
+    <div class="section">
+        <h2>5. 实时数据查看</h2>
+        <button onclick="refreshAllData()">刷新数据</button>
+        <pre id="all-data">点击"刷新数据"查看...</pre>
+    </div>
+
+    <script>
+        const DB_NAME = 'EchoTracksDB';
+        const DB_VERSION = 1;
+        let db = null;
+
+        async function initDB() {
+            if (db) return db;
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(DB_NAME, DB_VERSION);
+                request.onerror = () => reject(request.error);
+                request.onsuccess = () => { db = request.result; resolve(db); };
+                request.onupgradeneeded = (event) => {
+                    const database = event.target.result;
+                    if (!database.objectStoreNames.contains('nodes')) {
+                        const nodeStore = database.createObjectStore('nodes', { keyPath: 'node_id' });
+                        nodeStore.createIndex('event_date', 'event_date', { unique: false });
+                    }
+                    if (!database.objectStoreNames.contains('clues')) database.createObjectStore('clues', { keyPath: 'clue_id' });
+                    if (!database.objectStoreNames.contains('branches')) database.createObjectStore('branches', { keyPath: 'branch_id' });
+                    if (!database.objectStoreNames.contains('profile')) database.createObjectStore('profile', { keyPath: 'id' });
+                };
+            });
+        }
+
+        async function testConnection() {
+            const resultDiv = document.getElementById('connection-result');
+            try {
+                await initDB();
+                resultDiv.innerHTML = '<p class="success">✅ 数据库连接成功！</p>' +
+                    '<p>数据库名: ' + DB_NAME + '</p>' +
+                    '<p>对象存储: ' + Array.from(db.objectStoreNames).join(', ') + '</p>';
+            } catch (err) {
+                resultDiv.innerHTML = '<p class="error">❌ 连接失败: ' + err.message + '</p>';
+            }
+        }
+
+        async function insertTestNode() {
+            const resultDiv = document.getElementById('nodes-result');
+            try {
+                await initDB();
+                const node = {
+                    node_id: 'node_' + Date.now(),
+                    event_date: new Date().toISOString().split('T')[0],
+                    salience_score: Math.floor(Math.random() * 10) + 1,
+                    core_event: '测试事件 - ' + new Date().toLocaleTimeString(),
+                    npc_state: { current_emotion: '开心', attitude_towards_user: '友好' },
+                    memory_source: 'txt_extraction',
+                    opening_mode: 'dialogue_driven',
+                    created_at: new Date().toISOString(),
+                };
+                const tx = db.transaction('nodes', 'readwrite');
+                const store = tx.objectStore('nodes');
+                await new Promise((resolve, reject) => {
+                    const req = store.put(node);
+                    req.onsuccess = () => resolve();
+                    req.onerror = () => reject(req.error);
+                });
+                resultDiv.innerHTML = '<p class="success">✅ 节点插入成功！</p><pre>' + JSON.stringify(node, null, 2) + '</pre>';
+                refreshAllData();
+            } catch (err) {
+                resultDiv.innerHTML = '<p class="error">❌ 插入失败: ' + err.message + '</p>';
+            }
+        }
+
+        async function getAllNodes() {
+            const resultDiv = document.getElementById('nodes-result');
+            try {
+                await initDB();
+                const tx = db.transaction('nodes', 'readonly');
+                const store = tx.objectStore('nodes');
+                const nodes = await new Promise((resolve, reject) => {
+                    const req = store.getAll();
+                    req.onsuccess = () => resolve(req.result);
+                    req.onerror = () => reject(req.error);
+                });
+                resultDiv.innerHTML = '<p class="info">📊 共 ' + nodes.length + ' 个节点</p><pre>' + JSON.stringify(nodes, null, 2) + '</pre>';
+            } catch (err) {
+                resultDiv.innerHTML = '<p class="error">❌ 获取失败: ' + err.message + '</p>';
+            }
+        }
+
+        async function updateTestNode() {
+            const resultDiv = document.getElementById('nodes-result');
+            try {
+                await initDB();
+                const tx = db.transaction('nodes', 'readonly');
+                const store = tx.objectStore('nodes');
+                const nodes = await new Promise((resolve, reject) => {
+                    const req = store.getAll();
+                    req.onsuccess = () => resolve(req.result);
+                    req.onerror = () => reject(req.error);
+                });
+                if (nodes.length === 0) { resultDiv.innerHTML = '<p class="error">⚠️ 没有节点可更新</p>'; return; }
+                const node = nodes[0];
+                node.core_event = '已更新 - ' + new Date().toLocaleTimeString();
+                const tx2 = db.transaction('nodes', 'readwrite');
+                const store2 = tx2.objectStore('nodes');
+                await new Promise((resolve, reject) => {
+                    const req = store2.put(node);
+                    req.onsuccess = () => resolve();
+                    req.onerror = () => reject(req.error);
+                });
+                resultDiv.innerHTML = '<p class="success">✅ 节点更新成功！</p>';
+                refreshAllData();
+            } catch (err) {
+                resultDiv.innerHTML = '<p class="error">❌ 更新失败: ' + err.message + '</p>';
+            }
+        }
+
+        async function deleteTestNode() {
+            const resultDiv = document.getElementById('nodes-result');
+            try {
+                await initDB();
+                const tx = db.transaction('nodes', 'readonly');
+                const store = tx.objectStore('nodes');
+                const nodes = await new Promise((resolve, reject) => {
+                    const req = store.getAll();
+                    req.onsuccess = () => resolve(req.result);
+                    req.onerror = () => reject(req.error);
+                });
+                if (nodes.length === 0) { resultDiv.innerHTML = '<p class="error">⚠️ 没有节点可删除</p>'; return; }
+                const tx2 = db.transaction('nodes', 'readwrite');
+                const store2 = tx2.objectStore('nodes');
+                await new Promise((resolve, reject) => {
+                    const req = store2.delete(nodes[0].node_id);
+                    req.onsuccess = () => resolve();
+                    req.onerror = () => reject(req.error);
+                });
+                resultDiv.innerHTML = '<p class="success">✅ 节点删除成功！</p>';
+                refreshAllData();
+            } catch (err) {
+                resultDiv.innerHTML = '<p class="error">❌ 删除失败: ' + err.message + '</p>';
+            }
+        }
+
+        async function updateProfile() {
+            const resultDiv = document.getElementById('profile-result');
+            try {
+                await initDB();
+                const profile = { id: 'main', name: '测试角色', style: '温和内敛', logic: '理性', global_vibe: 'calm' };
+                const tx = db.transaction('profile', 'readwrite');
+                const store = tx.objectStore('profile');
+                await new Promise((resolve, reject) => {
+                    const req = store.put(profile);
+                    req.onsuccess = () => resolve();
+                    req.onerror = () => reject(req.error);
+                });
+                resultDiv.innerHTML = '<p class="success">✅ 画像更新成功！</p>';
+                refreshAllData();
+            } catch (err) {
+                resultDiv.innerHTML = '<p class="error">❌ 更新失败: ' + err.message + '</p>';
+            }
+        }
+
+        async function getProfile() {
+            const resultDiv = document.getElementById('profile-result');
+            try {
+                await initDB();
+                const tx = db.transaction('profile', 'readonly');
+                const store = tx.objectStore('profile');
+                const profile = await new Promise((resolve, reject) => {
+                    const req = store.get('main');
+                    req.onsuccess = () => resolve(req.result);
+                    req.onerror = () => reject(req.error);
+                });
+                if (profile) resultDiv.innerHTML = '<p class="success">✅ 获取成功！</p><pre>' + JSON.stringify(profile, null, 2) + '</pre>';
+                else resultDiv.innerHTML = '<p class="info">ℹ️ 暂无人物画像</p>';
+            } catch (err) {
+                resultDiv.innerHTML = '<p class="error">❌ 获取失败: ' + err.message + '</p>';
+            }
+        }
+
+        async function clearAllData() {
+            if (!confirm('确定要清除所有数据吗？此操作不可恢复！')) return;
+            const resultDiv = document.getElementById('clear-result');
+            try {
+                await initDB();
+                const stores = ['nodes', 'clues', 'branches', 'profile'];
+                for (const storeName of stores) {
+                    const tx = db.transaction(storeName, 'readwrite');
+                    const store = tx.objectStore(storeName);
+                    await new Promise((resolve, reject) => {
+                        const req = store.clear();
+                        req.onsuccess = () => resolve();
+                        req.onerror = () => reject(req.error);
+                    });
+                }
+                resultDiv.innerHTML = '<p class="success">✅ 所有数据已清除！</p>';
+                refreshAllData();
+            } catch (err) {
+                resultDiv.innerHTML = '<p class="error">❌ 清除失败: ' + err.message + '</p>';
+            }
+        }
+
+        async function refreshAllData() {
+            const pre = document.getElementById('all-data');
+            try {
+                await initDB();
+                const data = {};
+                const stores = ['nodes', 'clues', 'branches', 'profile'];
+                for (const storeName of stores) {
+                    const tx = db.transaction(storeName, 'readonly');
+                    const store = tx.objectStore(storeName);
+                    const items = await new Promise((resolve, reject) => {
+                        const req = store.getAll();
+                        req.onsuccess = () => resolve(req.result);
+                        req.onerror = () => reject(req.error);
+                    });
+                    data[storeName] = items;
+                }
+                pre.textContent = JSON.stringify(data, null, 2);
+            } catch (err) {
+                pre.textContent = '错误: ' + err.message;
+            }
+        }
+
+        window.onload = () => { refreshAllData(); };
+    </script>
+</body>
+</html>

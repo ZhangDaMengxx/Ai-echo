@@ -154,10 +154,11 @@ export default function MTestPage() {
 	const handleCommit = async () => {
 		setIsCommitting(true);
 		try {
-			await commitNodes(nodes);
+			await commitNodes(nodes, characterBase || undefined);
 			setViewMode('upload');
 			setNodes([]);
 			setPipelineStage('idle');
+			setCharacterBase(null);
 		} catch (err) {
 			setPipelineError(err instanceof Error ? err.message : '提交失败');
 		} finally {
