@@ -2,9 +2,20 @@
 // NodeIconGenerator: 节点图标生成器
 // 描述: 使用 Canvas 生成抽象几何图形作为节点图标
 // 特点: 零成本、风格统一、情绪映射、每个节点独特
+// 预留: ComfyUI 接口，可切换为 AI 生成
 // ============================================================
 
-import React, { useEffect, useRef, useCallback } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+
+// 全局配置：是否使用 ComfyUI
+export const NODE_ICON_CONFIG = {
+	// 设为 true 启用 ComfyUI，false 使用本地 Canvas 生成
+	useComfyUI: false,
+	// ComfyUI 服务地址
+	comfyUIBaseURL: process.env.NEXT_PUBLIC_COMFYUI_URL || 'http://localhost:8188',
+	// 默认工作流 ID（后续可配置）
+	defaultWorkflowId: 'echo_tracks_node_icon',
+};
 
 export interface NodeIconProps {
 	nodeId: string;
@@ -12,6 +23,10 @@ export interface NodeIconProps {
 	salienceScore: number;
 	size?: number;
 	className?: string;
+	// 可选：强制使用 ComfyUI 生成（覆盖全局配置）
+	forceComfyUI?: boolean;
+	// 可选：ComfyUI 工作流参数
+	comfyUIParams?: Record<string, unknown>;
 }
 
 // 情绪色彩映射
@@ -262,6 +277,41 @@ function drawParticleGrid(
 	ctx.globalAlpha = 1;
 }
 
+// ComfyUI 生成函数（预留接口）
+async function generateWithComfyUI(
+	nodeId: string,
+	emotion: string,
+	salienceScore: number,
+	params?: Record<string, unknown>
+): Promise<string | null> {
+	try {
+		// TODO: 实现 ComfyUI 调用
+		// 1. 构建工作流参数
+		// 2. 提交任务到 ComfyUI
+		// 3. 轮询或 WebSocket 等待完成
+		// 4. 返回图片 URL
+		
+		console.log('[ComfyUI] 生成节点图标:', { nodeId, emotion, salienceScore, params });
+		
+		// 预留示例代码：
+		// const response = await fetch(`${NODE_ICON_CONFIG.comfyUIBaseURL}/prompt`, {
+		//   method: 'POST',
+		//   headers: { 'Content-Type': 'application/json' },
+		//   body: JSON.stringify({
+		//     prompt: buildWorkflow(nodeId, emotion, salienceScore),
+		//     client_id: nodeId,
+		//   }),
+		// });
+		// const { prompt_id } = await response.json();
+		// return await waitForImage(prompt_id);
+		
+		return null; // 暂时返回 null，使用本地生成作为 fallback
+	} catch (err) {
+		console.error('[ComfyUI] 生成失败:', err);
+		return null;
+	}
+}
+
 // React 组件
 export const NodeIcon: React.FC<NodeIconProps> = ({
 	nodeId,
@@ -269,24 +319,54 @@ export const NodeIcon: React.FC<NodeIconProps> = ({
 	salienceScore,
 	size = 120,
 	className = '',
+	forceComfyUI,
+	comfyUIParams,
 }) => {
 	const canvasRef = useRef<HTMLCanvasElement>(null);
+	const [comfyUIImage, setComfyUIImage] = useState<string | null>(null);
+	const [isLoading, setIsLoading] = useState(false);
 
 	useEffect(() => {
-		const canvas = canvasRef.current;
-		if (!canvas) return;
+		const shouldUseComfyUI = forceComfyUI ?? NODE_ICON_CONFIG.useComfyUI;
+		
+		if (shouldUseComfyUI) {
+			// 使用 ComfyUI 生成
+			setIsLoading(true);
+			generateWithComfyUI(nodeId, emotion, salienceScore, comfyUIParams)
+				.then((url) => {
+					if (url) {
+						setComfyUIImage(url);
+					}
+				})
+				.finally(() => setIsLoading(false));
+		} else {
+			// 使用本地 Canvas 生成
+			const canvas = canvasRef.current;
+			if (!canvas) return;
 
-		// 设置 canvas 尺寸（考虑视网膜屏）
-		const dpr = window.devicePixelRatio || 1;
-		canvas.width = size * dpr;
-		canvas.height = size * dpr;
-		canvas.style.width = `${size}px`;
-		canvas.style.height = `${size}px`;
+			const dpr = window.devicePixelRatio || 1;
+			canvas.width = size * dpr;
+			canvas.height = size * dpr;
+			canvas.style.width = `${size}px`;
+			canvas.style.height = `${size}px`;
 
-		// 生成图标
-		generateNodeIcon(canvas, nodeId, emotion, salienceScore);
-	}, [nodeId, emotion, salienceScore, size]);
+			generateNodeIcon(canvas, nodeId, emotion, salienceScore);
+		}
+	}, [nodeId, emotion, salienceScore, size, forceComfyUI, comfyUIParams]);
 
+	// 如果有 ComfyUI 图片，显示图片
+	if (comfyUIImage && !isLoading) {
+		return (
+			<img
+				src={comfyUIImage}
+				alt="节点图标"
+				className={`rounded-full object-cover ${className}`}
+				style={{ width: size, height: size }}
+			/>
+		);
+	}
+
+	// 否则显示 Canvas
 	return (
 		<canvas
 			ref={canvasRef}
@@ -295,6 +375,7 @@ export const NodeIcon: React.FC<NodeIconProps> = ({
 				width: size,
 				height: size,
 				imageRendering: 'crisp-edges',
+				opacity: isLoading ? 0.5 : 1,
 			}}
 		/>
 	);
