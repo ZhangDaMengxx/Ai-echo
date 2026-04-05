@@ -13,6 +13,7 @@ import { UserInput } from '@/components/UserInput';
 import { DialogueTags } from '@/components/DialogueTags';
 import { useTheme } from '@/components/ThemeProvider';
 import { PipelineCalibration, DraftNode } from '@/components/PipelineCalibration';
+import { FateChoice } from '@/components/FateChoice';
 import { extractNodes, commitNodes, CharacterBase } from '@/lib/pipeline';
 import { fetchNode, sendChatMessage, ChatMessage } from '@/lib/chat';
 
@@ -55,6 +56,10 @@ export default function TestPage() {
 	const [aiMessages, setAiMessages] = useState<ChatMessage[]>([]);
 	const [chatLoading, setChatLoading] = useState(false);
 	const [availableClues, setAvailableClues] = useState<Array<{ clue_id: string; trigger_condition: string; clue_content: string }>>([]);
+
+	// 命运抉择状态
+	const [showFateChoice, setShowFateChoice] = useState(false);
+	const [currentNodeId, setCurrentNodeId] = useState<string | null>(null);
 
 	// Pipeline 校准状态
 	const [draftNodes, setDraftNodes] = useState<DraftNode[]>([]);
@@ -114,6 +119,8 @@ export default function TestPage() {
 	// 加载节点详情并生成开场白
 	const loadNodeAndStartChat = async (nodeId: string) => {
 		setActiveNodeId(nodeId);
+		setCurrentNodeId(nodeId);
+		setShowFateChoice(false);
 		setCurrentPage('dialogue');
 		setChatLoading(true);
 
@@ -295,7 +302,14 @@ export default function TestPage() {
 
 			// 如果有解锁的线索，从可用线索中移除
 			if (unlockedClues.length > 0) {
-				setAvailableClues((prev) => prev.filter((c) => !unlockedClues.includes(c.clue_id)));
+				setAvailableClues((prev) => {
+					const remaining = prev.filter((c) => !unlockedClues.includes(c.clue_id));
+					// 如果所有线索都解锁了，显示命运抉择
+					if (remaining.length === 0 && prev.length > 0) {
+						setTimeout(() => setShowFateChoice(true), 1000);
+					}
+					return remaining;
+				});
 			}
 		} catch {
 			setAiMessages((prev) => [
@@ -450,6 +464,18 @@ export default function TestPage() {
 							<motion.div className="mt-8" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
 								<UserInput onSend={handleSend} disabled={chatLoading} />
 							</motion.div>
+
+							{/* 命运抉择 */}
+							<FateChoice
+								isOpen={showFateChoice}
+								nodeId={currentNodeId || ''}
+								onClose={() => setShowFateChoice(false)}
+								onComplete={(choice) => {
+									console.log('用户选择:', choice);
+									// 抉择完成后返回 Story 页面
+									setCurrentPage('story');
+								}}
+							/>
 						</motion.div>
 					)}
 				</AnimatePresence>
