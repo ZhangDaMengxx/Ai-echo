@@ -121,7 +121,7 @@ export function DailyRipple({ ripple, onDismiss, onNodeClick }: DailyRippleProps
 					{/* 语录 */}
 					<blockquote className="mb-6">
 						<p className="text-lg text-white/90 italic leading-relaxed">
-							"{ripple.quote}"
+							&quot;{ripple.quote}&quot;
 						</p>
 					</blockquote>
 
