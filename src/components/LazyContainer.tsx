@@ -37,7 +37,8 @@ export function delayImport<T>(
 }
 
 // 懒加载高阶组件
-export function withLazyLoad<P extends object>(
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function withLazyLoad<P extends Record<string, any>>(
 	importFunc: () => Promise<{ default: ComponentType<P> }>,
 	options: {
 		delay?: number;
@@ -52,14 +53,14 @@ export function withLazyLoad<P extends object>(
 			: importFunc()
 	);
 
+	// eslint-disable-next-line react/display-name
 	return function LazyWrapper(props: P) {
 		return (
 			<Suspense fallback={fallback}>
 				<LazyComponent {...props} />
 			</Suspense>
 		);
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	} as ComponentType<P>;
+	};
 }
 
 // 懒加载图片组件
