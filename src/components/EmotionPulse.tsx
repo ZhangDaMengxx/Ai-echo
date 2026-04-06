@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { motion, useAnimation } from 'framer-motion';
-import { EmotionType, EMOTION_THEME_MAP } from './DynamicAtmosphere';
+import { EmotionType } from './DynamicAtmosphere';
 
 // ============================================================
 // EmotionPulse: 情绪心跳脉冲组件

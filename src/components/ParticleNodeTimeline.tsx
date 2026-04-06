@@ -67,7 +67,7 @@ interface ParticleNodeTimelineProps {
 function ParticleSphere({
 	position,
 	title,
-	description,
+	description: _description,
 	scale = 1,
 	isCenter = false,
 	distance = 0,
@@ -284,11 +284,11 @@ function TimelineScene({
 	onNodeClick: (node: TimelineNode, index: number) => void;
 	setCenterIndex: (index: number) => void;
 }) {
-	const { camera, gl } = useThree();
+	const { gl } = useThree();
 	const groupRef = useRef<THREE.Group>(null);
 
 	const NODE_SPACING = 3.5;
-	const SWITCH_THRESHOLD = 1.8; // 拖拽超过节点间距的50%就切换
+	// const SWITCH_THRESHOLD = 1.8; // 拖拽超过节点间距的50%就切换
 
 	// 拖拽状态
 	const dragState = useRef({
@@ -539,7 +539,7 @@ export function ParticleNodeTimeline({
 	const [centerIndex, setCenterIndex] = useState(0);
 
 	const handleNodeClick = useCallback(
-		(node: TimelineNode, index: number) => {
+		(node: TimelineNode, _index: number) => {
 			onNodeClick?.(node);
 		},
 		[onNodeClick]

@@ -41,12 +41,6 @@ interface AnalyzeEmotionOptions {
 	currentEmotion?: EmotionType;
 }
 
-interface AnalyzeEmotionResult {
-	data: EmotionAnalyzeResponse | null;
-	error: string | null;
-	loading: boolean;
-}
-
 /**
  * 分析单条消息的情绪
  */

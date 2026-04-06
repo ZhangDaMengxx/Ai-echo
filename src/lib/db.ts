@@ -147,7 +147,7 @@ export async function unlockClue(clueId: string): Promise<HiddenClue> {
  */
 export async function searchSimilarNodes(
 	_queryEmbedding: number[],
-	_matchThreshold: number = 0.8,
+	// _matchThreshold: number = 0.8,
 	matchCount: number = 10
 ): Promise<Array<MemoryNode & { similarity: number }>> {
 	// 本地版本暂时返回所有节点，按显著性排序

@@ -55,7 +55,7 @@ export function withLazyLoad<P extends object>(
 	return function LazyWrapper(props: P) {
 		return (
 			<Suspense fallback={fallback}>
-				<LazyComponent {...(props as any)} />
+				<LazyComponent {...props} />
 			</Suspense>
 		);
 	} as ComponentType<P>;
@@ -130,7 +130,7 @@ export function VirtualList<T>({
 	const [scrollTop, setScrollTop] = useState(0);
 	const containerRef = useRef<HTMLDivElement>(null);
 
-	const { startIndex, endIndex, visibleCount } = useMemo(
+	const { startIndex, endIndex } = useMemo(
 		() =>
 			calculateVisibleRange(
 				scrollTop,

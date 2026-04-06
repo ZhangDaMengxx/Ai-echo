@@ -37,13 +37,13 @@ export const VIRTUAL_LIST_CONFIG = {
 /**
  * 记忆化函数 - 缓存计算结果
  */
-export function memoize<T extends (...args: any[]) => any>(
+export function memoize<T extends (...args: unknown[]) => unknown>(
 	fn: T,
 	maxSize: number = MEMO_CONFIG.maxSize
 ): T {
 	const cache = new Map<string, { value: ReturnType<T>; timestamp: number }>();
 
-	return ((...args: any[]) => {
+	return ((...args: unknown[]) => {
 		const key = JSON.stringify(args);
 		const now = Date.now();
 		const cached = cache.get(key);
@@ -223,7 +223,7 @@ export function useDebounce<T>(value: T, delay: number): T {
 /**
  * 节流 Hook
  */
-export function useThrottle<T extends (...args: any[]) => any>(
+export function useThrottle<T extends (...args: unknown[]) => unknown>(
 	fn: T,
 	limit: number
 ): T {
@@ -233,7 +233,7 @@ export function useThrottle<T extends (...args: any[]) => any>(
 	fnRef.current = fn;
 
 	return useCallback(
-		((...args: any[]) => {
+		((...args: unknown[]) => {
 			const now = Date.now();
 			if (now - lastRunRef.current >= limit) {
 				lastRunRef.current = now;

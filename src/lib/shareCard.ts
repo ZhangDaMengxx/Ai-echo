@@ -50,13 +50,13 @@ const EMOTION_LABELS: Record<EmotionType, string> = {
 	mysterious: '神秘',
 };
 
-// 模板背景
-const TEMPLATE_BACKGROUNDS: Record<ShareCardTemplate, string> = {
-	modern: 'linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 100%)',
-	vintage: 'linear-gradient(135deg, #1a1410 0%, #2d2418 100%)',
-	minimal: '#0a0a0f',
-	artistic: 'linear-gradient(135deg, #0f0a1a 0%, #1a0f2e 50%, #0a0a0f 100%)',
-};
+// 模板背景（保留以备后用）
+// const TEMPLATE_BACKGROUNDS: Record<ShareCardTemplate, string> = {
+// 	modern: 'linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 100%)',
+// 	vintage: 'linear-gradient(135deg, #1a1410 0%, #2d2418 100%)',
+// 	minimal: '#0a0a0f',
+// 	artistic: 'linear-gradient(135deg, #0f0a1a 0%, #1a0f2e 50%, #0a0a0f 100%)',
+// };
 
 /**
  * 生成分享卡片数据
@@ -265,7 +265,7 @@ function generateArtisticTemplate(
 	height: number,
 	emotionLabel: string
 ): string {
-	const particles = Array.from({ length: 20 }, (_, i) => {
+	const particles = Array.from({ length: 20 }, () => {
 		const x = 100 + Math.random() * 600;
 		const y = 50 + Math.random() * 350;
 		const r = 2 + Math.random() * 4;
