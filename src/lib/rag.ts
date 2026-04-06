@@ -65,15 +65,26 @@ export async function retrieveRelevantMemories(
 	threshold = 0.6
 ): Promise<RetrievedMemory[]> {
 	try {
+		console.log('[RAG] 开始检索:', { query: query.slice(0, 30), characterId });
+		
 		// 1. 生成查询向量
 		const queryEmbedding = await generateEmbedding(query);
+		const isZeroVector = queryEmbedding.every(v => v === 0);
+		console.log('[RAG] 查询向量:', isZeroVector ? '零向量(生成失败)' : '成功');
 		
 		// 2. 获取该人物的所有节点
 		const nodes = await localDb.getNodesByCharacter(characterId);
+		console.log('[RAG] 人物节点数:', nodes.length);
 		
 		if (nodes.length === 0) {
+			console.log('[RAG] 无节点数据，跳过检索');
 			return [];
 		}
+		
+		// 显示前3个节点摘要
+		nodes.slice(0, 3).forEach((n, i) => {
+			console.log(`[RAG] 节点[${i}]`, n.node_id, n.core_event?.slice(0, 30));
+		});
 		
 		// 3. 计算相似度并排序
 		const scoredNodes = await Promise.all(
@@ -92,11 +103,24 @@ export async function retrieveRelevantMemories(
 			})
 		);
 		
+		// 显示所有相似度（用于调试）
+		console.log('[RAG] 相似度结果:');
+		scoredNodes
+			.sort((a, b) => b.similarity - a.similarity)
+			.slice(0, 5)
+			.forEach((n, i) => {
+				console.log(`  [${i}] ${n.similarity.toFixed(3)} - ${n.core_event?.slice(0, 30)}`);
+			});
+		
 		// 4. 过滤并排序
-		return scoredNodes
+		const filtered = scoredNodes
 			.filter((item) => item.similarity >= threshold)
 			.sort((a, b) => b.similarity - a.similarity)
 			.slice(0, topK);
+		
+		console.log(`[RAG] 检索完成: ${filtered.length}/${nodes.length} 条通过阈值(${threshold})`);
+		
+		return filtered;
 	} catch (error) {
 		console.error('[RAG] 检索记忆失败:', error);
 		return [];
