@@ -48,10 +48,9 @@ export function withLazyLoad<P extends Record<string, any>>(
 	const { delay = 0, fallback = <LoadingFallback /> } = options;
 
 	// 使用类型断言绕过 React.lazy 的复杂类型约束
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	const LazyComponent = React.lazy(() =>
 		delay > 0 ? delayImport(importFunc, delay) : importFunc()
-	) as React.ComponentType<any>;
+	) as unknown as React.FC<P>;
 
 	// eslint-disable-next-line react/display-name
 	return function LazyWrapper(props: P): JSX.Element {
