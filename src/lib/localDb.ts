@@ -239,19 +239,21 @@ class LocalDatabase {
 			});
 		};
 
-		// 迁移profile
-		const profileStore = transaction.objectStore('profile');
-		const newProfileStore = transaction.objectStore('character_profiles');
-		const profileRequest = profileStore.get('main');
-		profileRequest.onsuccess = () => {
-			const profile = profileRequest.result;
-			if (profile) {
-				newProfileStore.put({
-					...profile,
-					character_id: 'char_default'
-				});
-			}
-		};
+		// 迁移profile（检查表是否存在，避免旧数据库不兼容）
+		if (transaction.db.objectStoreNames.contains('profile')) {
+			const profileStore = transaction.objectStore('profile');
+			const newProfileStore = transaction.objectStore('character_profiles');
+			const profileRequest = profileStore.get('main');
+			profileRequest.onsuccess = () => {
+				const profile = profileRequest.result;
+				if (profile) {
+					newProfileStore.put({
+						...profile,
+						character_id: 'char_default'
+					});
+				}
+			};
+		}
 	}
 
 	// ========== 人物操作 ==========

@@ -26,19 +26,6 @@ export interface BackupData {
 	checksum: string;
 }
 
-// 兼容 v1.0 备份格式
-interface BackupDataV1_0 {
-	version: '1.0';
-	exportDate: string;
-	data: {
-		nodes: MemoryNode[];
-		clues: HiddenClue[];
-		branches: IfLineBranch[];
-		profile: CharacterProfile | null;
-	};
-	checksum: string;
-}
-
 // 导入结果
 export interface ImportResult {
 	success: boolean;
@@ -143,8 +130,7 @@ export async function exportToJSON(): Promise<void> {
 }
 
 /**
- * 从 JSON 文件导入数据
- * 支持 v1.0 和 v1.1 格式
+ * 从 JSON 文件导入数据 (仅支持 v1.1 格式)
  */
 export async function importFromJSON(
 	file: File,
@@ -160,11 +146,11 @@ export async function importFromJSON(
 			return { success: false, message: '文件格式错误：不是有效的 JSON 文件' };
 		}
 
-		const backup = parsed as BackupData | BackupDataV1_0;
+		const backup = parsed as BackupData;
 
-		// 校验版本
-		if (backup.version !== '1.0' && backup.version !== '1.1') {
-			return { success: false, message: `不兼容的备份版本: ${backup.version}` };
+		// 校验版本 (仅支持 v1.1)
+		if (backup.version !== '1.1') {
+			return { success: false, message: `不支持的备份版本: ${backup.version}，请使用 v1.1 格式` };
 		}
 
 		// 校验数据完整性
@@ -190,46 +176,21 @@ export async function importFromJSON(
 		let clueCount = 0;
 		let branchCount = 0;
 
-		// 处理 v1.1 格式的人物导入
-		if (backup.version === '1.1') {
-			const v11Backup = backup as BackupData;
-			// 导入人物
-			if (v11Backup.data.characters && Array.isArray(v11Backup.data.characters)) {
-				for (const char of v11Backup.data.characters) {
-					const existing = await localDb.getCharacterById(char.id);
-					if (!existing) {
-						await localDb.createCharacter(char);
-					}
-				}
-			}
-			// 导入人物画像
-			if (v11Backup.data.profiles && Array.isArray(v11Backup.data.profiles)) {
-				for (const profile of v11Backup.data.profiles) {
-					const { character_id, ...profileData } = profile;
-					await localDb.updateProfileByCharacter(character_id, profileData);
+		// 导入人物
+		if (backup.data.characters && Array.isArray(backup.data.characters)) {
+			for (const char of backup.data.characters) {
+				const existing = await localDb.getCharacterById(char.id);
+				if (!existing) {
+					await localDb.createCharacter(char);
 				}
 			}
 		}
 
-		// 处理 v1.0 格式（无人物信息，创建默认人物）
-		const defaultCharacterId = 'default_character';
-		if (backup.version === '1.0') {
-			// 检查是否已存在默认人物
-			const existing = await localDb.getCharacterById(defaultCharacterId);
-			if (!existing) {
-				await localDb.createCharacter({
-					id: defaultCharacterId,
-					name: '默认人物',
-					slug: 'default',
-					createdAt: new Date().toISOString(),
-					updatedAt: new Date().toISOString(),
-					isDefault: true,
-				});
-			}
-			// 导入旧版 profile
-			const v10Backup = backup as BackupDataV1_0;
-			if (v10Backup.data.profile) {
-				await localDb.updateProfileByCharacter(defaultCharacterId, v10Backup.data.profile);
+		// 导入人物画像
+		if (backup.data.profiles && Array.isArray(backup.data.profiles)) {
+			for (const profile of backup.data.profiles) {
+				const { character_id, ...profileData } = profile;
+				await localDb.updateProfileByCharacter(character_id, profileData);
 			}
 		}
 
@@ -241,11 +202,9 @@ export async function importFromJSON(
 					if (existing) continue;
 				}
 
-				// 对于 v1.0，使用默认人物
-				const characterId = node.character_id || defaultCharacterId;
 				// eslint-disable-next-line @typescript-eslint/no-unused-vars
 				const { node_id: _nodeId, created_at: _createdAt, ...nodeData } = node;
-				await localDb.insertNode({ ...nodeData, character_id: characterId });
+				await localDb.insertNode({ ...nodeData, character_id: node.character_id });
 				nodeCount++;
 			}
 		}
@@ -253,10 +212,9 @@ export async function importFromJSON(
 		// 导入线索
 		if (backup.data.clues && Array.isArray(backup.data.clues)) {
 			for (const clue of backup.data.clues) {
-				const characterId = clue.character_id || defaultCharacterId;
 				// eslint-disable-next-line @typescript-eslint/no-unused-vars
 				const { clue_id: _clueId, ...clueData } = clue;
-				await localDb.insertClue({ ...clueData, character_id: characterId });
+				await localDb.insertClue({ ...clueData, character_id: clue.character_id });
 				clueCount++;
 			}
 		}
@@ -264,10 +222,9 @@ export async function importFromJSON(
 		// 导入 IF 线分支
 		if (backup.data.branches && Array.isArray(backup.data.branches)) {
 			for (const branch of backup.data.branches) {
-				const characterId = branch.character_id || defaultCharacterId;
 				// eslint-disable-next-line @typescript-eslint/no-unused-vars
-				const { branch_id: _branchId, created_at: _createdAt2, ...branchData } = branch;
-				await localDb.insertBranch({ ...branchData, character_id: characterId });
+				const { branch_id: _branchId, created_at: _createdAt, ...branchData } = branch;
+				await localDb.insertBranch({ ...branchData, character_id: branch.character_id });
 				branchCount++;
 			}
 		}
@@ -304,8 +261,8 @@ export async function validateBackupFile(file: File): Promise<{
 		const text = await file.text();
 		const backup: BackupData = JSON.parse(text);
 
-		if (backup.version !== '1.0' && backup.version !== '1.1') {
-			return { valid: false, message: '版本不兼容' };
+		if (backup.version !== '1.1') {
+			return { valid: false, message: `不支持的版本: ${backup.version}，请使用 v1.1 格式` };
 		}
 
 		const expectedChecksum = generateChecksum(backup.data);
@@ -320,7 +277,7 @@ export async function validateBackupFile(file: File): Promise<{
 				exportDate: backup.exportDate,
 				nodeCount: backup.data.nodes?.length || 0,
 				clueCount: backup.data.clues?.length || 0,
-				profileName: backup.data.profile?.name,
+				profileName: backup.data.profiles?.[0]?.name,
 			},
 		};
 	} catch {

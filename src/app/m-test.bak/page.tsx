@@ -9,7 +9,7 @@ import { RadarChart } from '@/components/RadarChart';
 import { TranslucentContainer } from '@/components/TranslucentContainer';
 import { useTheme } from '@/components/ThemeProvider';
 import { ParticleNodeTimeline, TimelineNode } from '@/components/ParticleNodeTimeline';
-import { extractNodes, commitNodesLegacy, CharacterBase } from '@/lib/pipeline';
+import { extractNodes, CharacterBase } from '@/lib/pipeline';
 
 // 校准模式类型
 type ViewMode = 'upload' | 'timeline' | 'detail';
