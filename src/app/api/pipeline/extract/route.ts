@@ -48,33 +48,35 @@ async function extractFromChunk(chunk: string): Promise<ExtractResult | null> {
 
 文本：
 """
-${chunk.slice(0, 2000)}
+${chunk.slice(0, 1500)}
 """
 
 要求：
 1. 如果文本中有日期，提取为event_date（格式：YYYY-MM-DD）
-2. 提取core_event：核心事件描述（100字以内）
+2. 提取core_event：核心事件描述（50字以内）
 3. 提取npc_state：
-   - current_emotion：当前情绪
-   - attitude_towards_user：对用户的态度
+   - current_emotion：当前情绪（简短，如：平静、开心、难过）
+   - attitude_towards_user：对用户的态度（如：友好、疏远、依赖）
 4. 评估salience_score：情感显著性打分（1-10）
-5. 提取hidden_clues：可能的隐藏线索数组（可选）
+5. 提取character_name：文中主要人物的名字（如无法确定填null）
 
-输出合法JSON：
+重要：必须输出完整、合法的JSON，不要截断。
+
+输出格式：
 {
   "event_date": "YYYY-MM-DD或null",
   "core_event": "事件描述",
-  "character_name": "文中主要人物的名字，如果无法确定请填null",
+  "character_name": "名字或null",
   "npc_state": {"current_emotion": "情绪", "attitude_towards_user": "态度"},
-  "salience_score": 数字,
-  "hidden_clues": [{"trigger": "触发条件", "content": "线索内容"}]
+  "salience_score": 5,
+  "hidden_clues": []
 }
 `
 
   try {
     const res = await callQwen(
       [{ role: 'user', content: prompt }],
-      { model: 'qwen-turbo', temperature: 0.1, max_tokens: 1024 }
+      { model: 'qwen-turbo', temperature: 0.1, max_tokens: 2048 }
     )
     
     // 处理不同可能的响应格式
@@ -92,41 +94,123 @@ ${chunk.slice(0, 2000)}
       return null
     }
 
-    // 提取 JSON
-    const jsonMatch = text.match(/\{[\s\S]*?\}/)
-    if (jsonMatch) {
-      try {
-        const data = JSON.parse(jsonMatch[0])
-        
-        // 验证必要字段
-        if (!data.core_event) {
-          console.log('Extract: Missing core_event, skipping')
-          return null
-        }
-        
-        return {
-          event_date: data.event_date || null,
-          core_event: data.core_event,
-          character_name: data.character_name || null,
-          npc_state: data.npc_state || { current_emotion: '平静', attitude_towards_user: '中性' },
-          salience_score: typeof data.salience_score === 'number' ? data.salience_score : 5,
-          hidden_clues: data.hidden_clues || [],
-          raw_text: chunk.slice(0, 500),
-          memory_source: 'txt_extraction',
-          opening_mode: data.npc_state?.current_emotion?.includes('沉默') ? 'action_driven' : 'dialogue_driven'
-        }
-      } catch (parseError) {
-        console.error('JSON parse error:', parseError, 'Text:', text.slice(0, 100))
+    // 尝试提取完整 JSON
+    let jsonStr = extractCompleteJson(text)
+    if (!jsonStr) {
+      console.log('No complete JSON found in response:', text.slice(0, 200))
+      return null
+    }
+
+    // 尝试解析
+    try {
+      const data = JSON.parse(jsonStr)
+      
+      // 验证必要字段
+      if (!data.core_event || typeof data.core_event !== 'string') {
+        console.log('Extract: Missing or invalid core_event')
         return null
       }
-    } else {
-      console.log('No JSON found in response:', text.slice(0, 100))
+      
+      return {
+        event_date: data.event_date === 'null' ? null : (data.event_date || null),
+        core_event: data.core_event.slice(0, 200), // 限制长度
+        character_name: data.character_name === 'null' ? null : (data.character_name || null),
+        npc_state: {
+          current_emotion: data.npc_state?.current_emotion || '平静',
+          attitude_towards_user: data.npc_state?.attitude_towards_user || '中性'
+        },
+        salience_score: typeof data.salience_score === 'number' ? data.salience_score : 5,
+        hidden_clues: Array.isArray(data.hidden_clues) ? data.hidden_clues : [],
+        raw_text: chunk.slice(0, 500),
+        memory_source: 'txt_extraction',
+        opening_mode: data.npc_state?.current_emotion?.includes('沉默') ? 'action_driven' : 'dialogue_driven'
+      }
+    } catch (parseError) {
+      console.error('JSON parse error:', parseError)
+      console.error('Raw text:', text.slice(0, 300))
+      console.error('Extracted JSON:', jsonStr.slice(0, 300))
+      return null
     }
   } catch (e) {
     console.error('Extract error:', e)
   }
 
   return null
+}
+
+// 提取完整 JSON 对象的辅助函数
+function extractCompleteJson(text: string): string | null {
+  // 方法1：尝试匹配完整的 JSON 对象（平衡括号）
+  const jsonRegex = /\{(?:[^{}]|\{(?:[^{}]|\{[^{}]*\})*\})*\}/g
+  const matches = text.match(jsonRegex)
+  
+  if (matches) {
+    // 找最长的匹配（最可能完整的）
+    const sorted = matches.sort((a, b) => b.length - a.length)
+    for (const match of sorted) {
+      try {
+        JSON.parse(match) // 验证是否可解析
+        return match
+      } catch {
+        continue
+      }
+    }
+  }
+  
+  // 方法2：尝试修复截断的 JSON
+  const startIdx = text.indexOf('{')
+  const endIdx = text.lastIndexOf('}')
+  
+  if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
+    const candidate = text.slice(startIdx, endIdx + 1)
+    try {
+      JSON.parse(candidate)
+      return candidate
+    } catch {
+      // 尝试修复常见截断问题
+      const fixed = tryFixTruncatedJson(candidate)
+      if (fixed) return fixed
+    }
+  }
+  
+  return null
+}
+
+// 尝试修复截断的 JSON
+function tryFixTruncatedJson(jsonStr: string): string | null {
+  let fixed = jsonStr
+  
+  // 补齐缺失的右括号
+  const openBraces = (fixed.match(/\{/g) || []).length
+  const closeBraces = (fixed.match(/\}/g) || []).length
+  const openBrackets = (fixed.match(/\[/g) || []).length
+  const closeBrackets = (fixed.match(/\]/g) || []).length
+  
+  // 添加缺失的闭合括号
+  for (let i = 0; i < openBraces - closeBraces; i++) {
+    fixed += '}'
+  }
+  for (let i = 0; i < openBrackets - closeBrackets; i++) {
+    fixed += ']'
+  }
+  
+  // 处理未闭合的字符串
+  const quoteCount = (fixed.match(/"/g) || []).length
+  if (quoteCount % 2 !== 0) {
+    // 找到最后一个双引号，检查后面是否有逗号或右括号
+    const lastQuote = fixed.lastIndexOf('"')
+    const afterQuote = fixed.slice(lastQuote + 1).trim()
+    if (!afterQuote.startsWith(',') && !afterQuote.startsWith('}') && !afterQuote.startsWith(']')) {
+      fixed += '"' // 补齐字符串
+    }
+  }
+  
+  try {
+    JSON.parse(fixed)
+    return fixed
+  } catch {
+    return null
+  }
 }
 
 // 分析人物性格基座（轻量级方案 A）
