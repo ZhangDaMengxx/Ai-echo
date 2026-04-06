@@ -18,48 +18,27 @@ export async function generateEmbedding(text: string): Promise<number[]> {
 	// 检查缓存
 	const cacheKey = text.slice(0, 100);
 	if (embeddingCache.has(cacheKey)) {
-		console.log('[Embedding] Cache hit:', cacheKey.slice(0, 30));
 		return embeddingCache.get(cacheKey)!;
 	}
 
 	// 文本长度限制（防止过长）
 	const truncatedText = text.slice(0, 2000);
-	console.log('[Embedding] Requesting embedding for:', truncatedText.slice(0, 50));
 
 	try {
 		// 使用本地 API 避免 CORS
-		console.log('[Embedding] Calling /api/embedding...');
 		const response = await fetch('/api/embedding', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({ texts: [truncatedText] }),
 		});
 
-		console.log('[Embedding] Response status:', response.status);
-
 		if (!response.ok) {
 			const error = await response.json().catch(() => ({}));
-			console.error('[Embedding] API error:', error);
 			throw new Error(error.error || `Embedding API 错误: ${response.status}`);
 		}
 
 		const data = await response.json();
-		console.log('[Embedding] Response data keys:', Object.keys(data));
-		
 		const embedding = data.embeddings?.[0];
-		console.log('[Embedding] First embedding:', embedding ? `length=${embedding.length}` : 'undefined');
-		
-		// 详细检查向量内容
-		if (embedding) {
-			const nonZeroCount = embedding.filter((v: number) => v !== 0).length;
-			const sum = embedding.reduce((a: number, b: number) => a + b, 0);
-			console.log('[Embedding] Vector stats:', { 
-				length: embedding.length, 
-				nonZeroCount, 
-				sum: sum.toFixed(4),
-				first5: embedding.slice(0, 5).map((v: number) => v.toFixed(4))
-			});
-		}
 
 		if (!embedding || embedding.length !== EMBEDDING_DIM) {
 			throw new Error(`Invalid embedding response: ${embedding?.length} dims`);

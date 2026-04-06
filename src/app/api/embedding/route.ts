@@ -11,7 +11,6 @@ const EMBEDDING_URL = 'https://dashscope.aliyuncs.com/api/v1/services/embeddings
 export async function POST(request: NextRequest) {
 	try {
 		const { texts } = await request.json();
-		console.log('[API Embedding] Request:', { count: texts?.length, sample: texts?.[0]?.slice(0, 30) });
 
 		if (!Array.isArray(texts) || texts.length === 0) {
 			return NextResponse.json(
@@ -29,9 +28,8 @@ export async function POST(request: NextRequest) {
 			);
 		}
 
-		// 只处理第一个文本（简化调试）
+		// 只处理第一个文本
 		const text = texts[0].slice(0, 2000);
-		console.log('[API Embedding] Calling Qwen API with text:', text.slice(0, 50));
 		
 		const response = await fetch(EMBEDDING_URL, {
 			method: 'POST',
@@ -45,32 +43,27 @@ export async function POST(request: NextRequest) {
 			}),
 		});
 
-		console.log('[API Embedding] Qwen response status:', response.status);
-
 		if (!response.ok) {
 			const errorText = await response.text();
-			console.error('[API Embedding] API failed:', response.status, errorText);
+			console.error('[API Embedding] API failed:', response.status);
 			return NextResponse.json(
-				{ error: '阿里云API错误', status: response.status, details: errorText },
+				{ error: '阿里云API错误', status: response.status },
 				{ status: 502 }
 			);
 		}
 
 		const data = await response.json();
-		console.log('[API Embedding] Qwen full response:', JSON.stringify(data, null, 2).slice(0, 500));
 		
-		// 详细解析返回结构
+		// 解析返回结构
 		const embeddings = data.output?.embeddings;
 		if (!embeddings || !Array.isArray(embeddings) || embeddings.length === 0) {
-			console.error('[API Embedding] No embeddings in response, data:', data);
 			return NextResponse.json(
-				{ error: '阿里云返回格式错误', data },
+				{ error: '阿里云返回格式错误' },
 				{ status: 502 }
 			);
 		}
 
 		const firstEmbedding = embeddings[0];
-		console.log('[API Embedding] First embedding type:', typeof firstEmbedding, Array.isArray(firstEmbedding), firstEmbedding?.embedding ? 'has .embedding' : 'no .embedding');
 		
 		// 提取向量
 		let vec: number[];
@@ -79,9 +72,8 @@ export async function POST(request: NextRequest) {
 		} else if (firstEmbedding && Array.isArray(firstEmbedding.embedding)) {
 			vec = firstEmbedding.embedding;
 		} else {
-			console.error('[API Embedding] Unknown embedding format:', firstEmbedding);
 			return NextResponse.json(
-				{ error: '未知向量格式', embedding: firstEmbedding },
+				{ error: '未知向量格式' },
 				{ status: 502 }
 			);
 		}
@@ -89,21 +81,17 @@ export async function POST(request: NextRequest) {
 		// text-embedding-v2 返回 1536 维
 		const EXPECTED_DIM = 1536;
 		if (vec.length !== EXPECTED_DIM) {
-			console.error('[API Embedding] Wrong dimension:', vec.length, 'expected:', EXPECTED_DIM);
 			return NextResponse.json(
 				{ error: '向量维度错误', length: vec.length, expected: EXPECTED_DIM },
 				{ status: 502 }
 			);
 		}
 
-		const nonZeroCount = vec.filter((v: number) => v !== 0).length;
-		console.log('[API Embedding] Success! Non-zero count:', nonZeroCount, 'First 5:', vec.slice(0, 5));
-
 		return NextResponse.json({ embeddings: [vec] });
 	} catch (error) {
 		console.error('[API Embedding] Error:', error);
 		return NextResponse.json(
-			{ error: '生成向量失败', details: String(error) },
+			{ error: '生成向量失败' },
 			{ status: 500 }
 		);
 	}

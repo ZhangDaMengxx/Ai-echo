@@ -65,22 +65,18 @@ export async function retrieveRelevantMemories(
 	query: string,
 	characterId: string,
 	topK = 3,
-	threshold = 0.25,  // 降低阈值，避免过滤掉所有结果
-	currentDate?: string  // 当前时间点，只检索此日期之前的记忆
+	threshold = 0.25,
+	currentDate?: string
 ): Promise<RetrievedMemory[]> {
 	try {
-		console.log('[RAG] 开始检索:', { query: query.slice(0, 30), characterId });
-		
 		// 1. 生成查询向量
 		const queryEmbedding = await generateEmbedding(query);
-		const nonZeroCount = queryEmbedding.filter(v => v !== 0).length;
-		const sum = queryEmbedding.reduce((a, b) => a + b, 0);
-		console.log('[RAG] 查询向量:', { 
-			length: queryEmbedding.length, 
-			nonZeroCount, 
-			sum: sum.toFixed(6),
-			first5: queryEmbedding.slice(0, 5).map(v => v.toFixed(4))
-		});
+		
+		// 检查向量是否有效
+		if (queryEmbedding.every(v => v === 0)) {
+			console.warn('[RAG] 查询向量生成失败');
+			return [];
+		}
 		
 		// 2. 获取该人物的所有节点
 		const allNodes = await localDb.getNodesByCharacter(characterId);
@@ -89,35 +85,14 @@ export async function retrieveRelevantMemories(
 		const effectiveDate = currentDate || DEFAULT_CURRENT_DATE;
 		const nodes = allNodes.filter(node => node.event_date <= effectiveDate);
 		
-		console.log('[RAG] 人物节点数:', allNodes.length, '时间过滤后:', nodes.length, '当前时间:', effectiveDate);
-		
 		if (nodes.length === 0) {
-			console.log('[RAG] 无节点数据（或都在未来），跳过检索');
 			return [];
 		}
 		
-		// 显示前3个节点摘要（包含时间）
-		nodes.slice(0, 3).forEach((n, i) => {
-			console.log(`[RAG] 节点[${i}] ${n.event_date} ${n.core_event?.slice(0, 30)}`);
-		});
-		
 		// 3. 计算相似度并排序
 		const scoredNodes = await Promise.all(
-			nodes.map(async (node, idx) => {
+			nodes.map(async (node) => {
 				const nodeEmbedding = await getNodeEmbedding(node);
-				
-				// 调试第一个节点
-				if (idx === 0) {
-					const nodeNonZero = nodeEmbedding.filter(v => v !== 0).length;
-					const nodeSum = nodeEmbedding.reduce((a, b) => a + b, 0);
-					console.log('[RAG] 第一个节点向量:', {
-						length: nodeEmbedding.length,
-						nonZeroCount: nodeNonZero,
-						sum: nodeSum.toFixed(6),
-						first5: nodeEmbedding.slice(0, 5).map(v => v.toFixed(4))
-					});
-				}
-				
 				const similarity = cosineSimilarity(queryEmbedding, nodeEmbedding);
 				
 				return {
@@ -131,24 +106,11 @@ export async function retrieveRelevantMemories(
 			})
 		);
 		
-		// 显示所有相似度（用于调试）
-		console.log('[RAG] 相似度结果:');
-		scoredNodes
-			.sort((a, b) => b.similarity - a.similarity)
-			.slice(0, 5)
-			.forEach((n, i) => {
-				console.log(`  [${i}] ${n.similarity.toFixed(3)} - ${n.core_event?.slice(0, 30)}`);
-			});
-		
 		// 4. 过滤并排序
-		const filtered = scoredNodes
+		return scoredNodes
 			.filter((item) => item.similarity >= threshold)
 			.sort((a, b) => b.similarity - a.similarity)
 			.slice(0, topK);
-		
-		console.log(`[RAG] 检索完成: ${filtered.length}/${nodes.length} 条通过阈值(${threshold})`);
-		
-		return filtered;
 	} catch (error) {
 		console.error('[RAG] 检索记忆失败:', error);
 		return [];

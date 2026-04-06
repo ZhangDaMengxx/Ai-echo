@@ -71,10 +71,15 @@ export default function StoryPage() {
 		npc_state?: { current_emotion?: string; attitude_towards_user?: string }
 		memory_source?: string
 		opening_mode?: string
+		event_date?: string
 	} | null>(null);
 	const [aiMessages, setAiMessages] = useState<ChatMessage[]>([]);
 	const [chatLoading, setChatLoading] = useState(false);
 	const [availableClues, setAvailableClues] = useState<Array<{ clue_id: string; trigger_condition: string; clue_content: string }>>([]);
+	
+	// 新的开始模式：基于用户当前时间，使用所有记忆
+	const [isNewBeginning, setIsNewBeginning] = useState(false);
+	const [allMemoriesContext, setAllMemoriesContext] = useState<string>('');
 
 	// 命运抉择状态
 	const [showFateChoice, setShowFateChoice] = useState(false);
@@ -109,7 +114,7 @@ export default function StoryPage() {
 		opening_mode?: string
 	}>>({});
 
-	// 加载 Story 节点（按当前人物过滤）
+	// 加载 Story 节点（按当前人物过滤，按时间排序）
 	const loadStoryNodes = async (): Promise<boolean> => {
 		if (!character) return false;
 		
@@ -117,7 +122,11 @@ export default function StoryPage() {
 		try {
 			const nodes = await localDb.getNodesByCharacter(character.id);
 			if (nodes.length > 0) {
-				const mapped = nodes.map((n) => ({
+				// 按时间排序（从早到晚）
+				const sortedNodes = [...nodes].sort((a, b) => 
+					new Date(a.event_date).getTime() - new Date(b.event_date).getTime()
+				);
+				const mapped = sortedNodes.map((n) => ({
 					id: n.node_id,
 					title: n.core_event?.slice(0, 10) || '未命名',
 					date: n.event_date,
@@ -127,12 +136,13 @@ export default function StoryPage() {
 				}));
 				setStoryNodes(mapped);
 				const details: Record<string, typeof nodeDetailsMap[string]> = {};
-				nodes.forEach((n) => {
+				sortedNodes.forEach((n) => {
 					details[n.node_id] = {
 						core_event: n.core_event,
 						npc_state: n.npc_state,
 						memory_source: n.memory_source,
 						opening_mode: n.opening_mode,
+						event_date: n.event_date,
 					};
 				});
 				setNodeDetailsMap(details);
@@ -308,6 +318,71 @@ export default function StoryPage() {
 		}
 	};
 
+	// 开始"新的开始"模式：基于用户当前时间，使用所有记忆
+	const startNewBeginning = async () => {
+		if (!character || storyNodes.length === 0) return;
+		
+		setIsNewBeginning(true);
+		setCurrentPage('dialogue');
+		setChatLoading(true);
+		
+		try {
+			// 获取所有记忆作为上下文
+			const allNodes = await localDb.getNodesByCharacter(character.id);
+			const sortedNodes = [...allNodes].sort((a, b) => 
+				new Date(a.event_date).getTime() - new Date(b.event_date).getTime()
+			);
+			
+			// 构建所有记忆的上下文
+			const memoriesContext = sortedNodes.map((n, i) => 
+				`[${n.event_date}] ${n.core_event}`
+			).join('\n');
+			setAllMemoriesContext(memoriesContext);
+			
+			// 当前真实时间
+			const now = new Date().toISOString().split('T')[0];
+			
+			// 创建特殊的 nodeData，表示"新的开始"
+			const newBeginningData = {
+				core_event: `今天是${now}。我们已经走过了很长的路，经历了许多事情。`,
+				npc_state: { current_emotion: '感慨', attitude_towards_user: '亲近' },
+				memory_source: 'all_memories' as const,
+				opening_mode: 'dialogue_driven' as const,
+				event_date: now,
+			};
+			setActiveNodeData(newBeginningData);
+			setAvailableClues([]);
+			
+			// 生成开场白，传入所有记忆
+			const { reply } = await sendChatMessage({
+				message: '好久不见',
+				conversationHistory: [],
+				availableClues: [],
+				nodeData: {
+					...newBeginningData,
+					// 在 core_event 中附加所有记忆作为上下文
+					core_event: `${newBeginningData.core_event}\n\n【我们共同的经历】\n${memoriesContext.slice(0, 2000)}`,
+				},
+				isFirstRound: true,
+				characterId: character.id,
+				enableRAG: false, // 使用全量记忆，不需要 RAG
+			});
+			
+			setAiMessages([
+				{ id: '1', role: 'system', content: `*${now}*` },
+				{ id: '2', role: 'assistant', content: reply },
+			]);
+		} catch (err) {
+			console.error('Start new beginning failed:', err);
+			setAiMessages([
+				{ id: '1', role: 'system', content: '*新的开始*' },
+				{ id: '2', role: 'assistant', content: '...你来了。' },
+			]);
+		} finally {
+			setChatLoading(false);
+		}
+	};
+
 	const handleSend = async (text: string) => {
 		if (!activeNodeData) return;
 
@@ -316,14 +391,22 @@ export default function StoryPage() {
 		setChatLoading(true);
 
 		try {
+			// 如果是"新的开始"模式，使用全量记忆
+			const nodeDataForAPI = isNewBeginning && allMemoriesContext 
+				? {
+						...activeNodeData,
+						core_event: `${activeNodeData.core_event}\n\n【我们共同的经历】\n${allMemoriesContext.slice(0, 2000)}`,
+					}
+				: activeNodeData;
+			
 			const { reply, unlockedClues } = await sendChatMessage({
 				message: text,
 				conversationHistory: aiMessages,
 				availableClues,
-				nodeData: activeNodeData,
+				nodeData: nodeDataForAPI,
 				isFirstRound: false,
 				characterId: character?.id,
-				enableRAG: true,
+				enableRAG: !isNewBeginning, // "新的开始"模式不使用 RAG，已经使用全量记忆
 			});
 
 			setAiMessages((prev) => [
@@ -413,7 +496,7 @@ export default function StoryPage() {
 				{/* 中间：页面切换 */}
 				<div className="hidden sm:flex items-center gap-4">
 					<GlassButton onClick={() => setCurrentPage('memory')} active={currentPage === 'memory'}>Memory</GlassButton>
-					<GlassButton onClick={() => { setCurrentPage('story'); loadStoryNodes(); }} active={currentPage === 'story'}>Story</GlassButton>
+					<GlassButton onClick={() => { setCurrentPage('story'); setIsNewBeginning(false); loadStoryNodes(); }} active={currentPage === 'story'}>Story</GlassButton>
 					<GlassButton onClick={() => setCurrentPage('dialogue')} active={currentPage === 'dialogue'}>Dialogue</GlassButton>
 				</div>
 				
@@ -439,7 +522,7 @@ export default function StoryPage() {
 			{/* 移动端页面切换 */}
 			<div className="sm:hidden absolute top-16 left-0 right-0 z-40 flex justify-center gap-2 px-4">
 				<GlassButton onClick={() => setCurrentPage('memory')} active={currentPage === 'memory'}>Memory</GlassButton>
-				<GlassButton onClick={() => { setCurrentPage('story'); loadStoryNodes(); }} active={currentPage === 'story'}>Story</GlassButton>
+				<GlassButton onClick={() => { setCurrentPage('story'); setIsNewBeginning(false); loadStoryNodes(); }} active={currentPage === 'story'}>Story</GlassButton>
 				<GlassButton onClick={() => setCurrentPage('dialogue')} active={currentPage === 'dialogue'}>Dialogue</GlassButton>
 			</div>
 
@@ -529,8 +612,34 @@ export default function StoryPage() {
 						</motion.div>
 					)}
 					{currentPage === 'story' && (
-						<motion.div key="story" className="w-full h-full" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+						<motion.div key="story" className="w-full h-full flex flex-col" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
 							<StoryCarousel nodes={storyNodes} onNodeClick={handleNodeClick} subjectName={aiName} />
+							
+							{/* 新的开始 - 在故事末尾 */}
+							{storyNodes.length > 0 && (
+								<motion.div 
+									className="flex justify-center pb-8 pt-4"
+									initial={{ opacity: 0, y: 20 }}
+									animate={{ opacity: 1, y: 0 }}
+									transition={{ delay: 0.3 }}
+								>
+									<button
+										onClick={startNewBeginning}
+										className="group relative px-8 py-4 rounded-full border border-white/20 bg-white/5 backdrop-blur-xl hover:bg-white/10 transition-all duration-300"
+									>
+										<div className="flex flex-col items-center gap-1">
+											<span className="text-white/60 text-xs tracking-[0.3em] group-hover:text-white/80 transition-colors">
+												新的篇章
+											</span>
+											<span className="text-white text-lg font-light tracking-wider group-hover:scale-105 transition-transform">
+												新的开始
+											</span>
+										</div>
+										<div className="absolute inset-0 rounded-full border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+									</button>
+								</motion.div>
+							)}
+							
 							<NodePreview
 								node={previewNode}
 								isOpen={showNodePreview}

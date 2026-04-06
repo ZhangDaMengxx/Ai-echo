@@ -117,7 +117,6 @@ export async function sendChatMessage(params: ChatParams): Promise<ChatResult> {
 			// 从当前节点获取时间点，确保不检索"未来"的记忆
 			const currentDate = params.nodeData?.event_date;
 			ragContext = await getRAGContext(params.message, params.characterId, currentDate);
-			console.log('[Chat] RAG检索到', ragContext.retrievedMemories.length, '条记忆', currentDate ? `(当前时间: ${currentDate})` : '');
 		} catch (err) {
 			console.warn('[Chat] RAG检索失败:', err)
 		}
@@ -138,16 +137,5 @@ export async function sendChatMessage(params: ChatParams): Promise<ChatResult> {
 		throw new Error(err.error || '对话失败')
 	}
 
-	const result = await res.json() as ChatResult
-	
-	// 将检索到的记忆附加到结果（调试用）
-	if (ragContext && ragContext.retrievedMemories.length > 0) {
-		result.retrievedMemories = ragContext.retrievedMemories.map(m => ({
-			node_id: m.node_id,
-			core_event: m.core_event,
-			similarity: Math.round(m.similarity * 100) / 100,
-		}))
-	}
-	
-	return result
+	return await res.json() as ChatResult
 }
