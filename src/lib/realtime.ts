@@ -47,7 +47,8 @@ export function subscribeToClueUnlocks(
 				table: 'Hidden_Clues',
 				filter: `node_id=eq.${nodeId}`,
 			},
-			(payload) => {
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			(payload: any) => {
 				const oldRecord = payload.old as HiddenClue;
 				const newRecord = payload.new as HiddenClue;
 
@@ -117,7 +118,8 @@ export function subscribeToAllClueUnlocks(
 				table: 'Hidden_Clues',
 				filter: 'is_unlocked=eq.true',
 			},
-			(payload) => {
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			(payload: any) => {
 				const oldRecord = payload.old as HiddenClue;
 				const newRecord = payload.new as HiddenClue;
 
