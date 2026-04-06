@@ -76,17 +76,51 @@ ${chunk.slice(0, 2000)}
       [{ role: 'user', content: prompt }],
       { model: 'qwen-turbo', temperature: 0.1, max_tokens: 1024 }
     )
-    const text = res.output?.choices?.[0]?.message?.content || ''
+    
+    // 处理不同可能的响应格式
+    let text = ''
+    if (typeof res === 'string') {
+      text = res
+    } else if (res.output?.choices?.[0]?.message?.content) {
+      text = res.output.choices[0].message.content
+    } else if (res.output?.text) {
+      text = res.output.text
+    } else if (res.choices?.[0]?.message?.content) {
+      text = res.choices[0].message.content
+    } else {
+      console.error('Unexpected Qwen response format:', JSON.stringify(res).slice(0, 200))
+      return null
+    }
 
-    const jsonMatch = text.match(/\{[\s\S]*\}/)
+    // 提取 JSON
+    const jsonMatch = text.match(/\{[\s\S]*?\}/)
     if (jsonMatch) {
-      const data = JSON.parse(jsonMatch[0])
-      return {
-        ...data,
-        raw_text: chunk.slice(0, 500),
-        memory_source: 'txt_extraction',
-        opening_mode: data.npc_state?.current_emotion?.includes('沉默') ? 'action_driven' : 'dialogue_driven'
+      try {
+        const data = JSON.parse(jsonMatch[0])
+        
+        // 验证必要字段
+        if (!data.core_event) {
+          console.log('Extract: Missing core_event, skipping')
+          return null
+        }
+        
+        return {
+          event_date: data.event_date || null,
+          core_event: data.core_event,
+          character_name: data.character_name || null,
+          npc_state: data.npc_state || { current_emotion: '平静', attitude_towards_user: '中性' },
+          salience_score: typeof data.salience_score === 'number' ? data.salience_score : 5,
+          hidden_clues: data.hidden_clues || [],
+          raw_text: chunk.slice(0, 500),
+          memory_source: 'txt_extraction',
+          opening_mode: data.npc_state?.current_emotion?.includes('沉默') ? 'action_driven' : 'dialogue_driven'
+        }
+      } catch (parseError) {
+        console.error('JSON parse error:', parseError, 'Text:', text.slice(0, 100))
+        return null
       }
+    } else {
+      console.log('No JSON found in response:', text.slice(0, 100))
     }
   } catch (e) {
     console.error('Extract error:', e)
@@ -200,11 +234,21 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '文本太短' }, { status: 400 })
     }
 
+    console.log(`[Pipeline] Processing text, length: ${text.length}, chunks: ${Math.ceil(text.length / 1000)}`)
+
     const chunks = sliceByDate(text)
-    const extractPromises = chunks.slice(0, 10).map(chunk => extractFromChunk(chunk))
+    console.log(`[Pipeline] Sliced into ${chunks.length} chunks`)
+
+    const extractPromises = chunks.slice(0, 10).map((chunk, i) => {
+      console.log(`[Pipeline] Processing chunk ${i + 1}/${Math.min(chunks.length, 10)}, length: ${chunk.length}`)
+      return extractFromChunk(chunk)
+    })
+    
     const results = await Promise.all(extractPromises)
     const validResults = results.filter((r): r is ExtractResult => r !== null && r.salience_score >= 5)
     validResults.sort((a, b) => b.salience_score - a.salience_score)
+
+    console.log(`[Pipeline] Extracted ${results.length} results, ${validResults.length} valid`)
 
     // 分析人物性格基座
     const characterBase = analyzeCharacterBase(validResults)

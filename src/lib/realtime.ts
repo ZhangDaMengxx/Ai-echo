@@ -177,6 +177,13 @@ export function getActiveSubscriptionCount(): number {
  * @param clue - 已解锁的线索
  */
 export async function broadcastClueUnlock(clue: HiddenClue): Promise<void> {
+	// 检查是否有真实的 Supabase 配置
+	const hasSupabase = !!process.env.NEXT_PUBLIC_SUPABASE_URL
+	if (!hasSupabase) {
+		console.log('[Realtime] Skipping broadcast (no Supabase config)')
+		return
+	}
+
 	try {
 		// 使用 Supabase broadcast 功能向所有客户端推送
 		const channel = supabaseAdmin.channel('clue-unlocks')

@@ -5,6 +5,12 @@ import { unlockClue as unlockClueInMemory } from '@/lib/memoryStore'
 import { broadcastClueUnlock } from '@/lib/realtime'
 import type { HiddenClue } from '@/lib/supabase'
 
+// 检查是否有 Supabase 配置
+const hasSupabase = !!process.env.NEXT_PUBLIC_SUPABASE_URL
+
+// 内存中存储解锁的线索（仅用于无 Supabase 时）
+const unlockedCluesInMemory = new Set<string>()
+
 export async function POST(request: NextRequest) {
   try {
     const {
@@ -68,21 +74,29 @@ export async function POST(request: NextRequest) {
           const args = JSON.parse(toolCall.function.arguments || '{}')
           const clue_id = args.clue_id as string
 
-          if (clue_id) {
-            try {
-              const { data } = await supabaseAdmin
-                .from('Hidden_Clues')
-                .update({ is_unlocked: true, unlocked_at: new Date().toISOString() })
-                .eq('clue_id', clue_id)
-                .select()
-                .single()
+          if (clue_id && !unlockedCluesInMemory.has(clue_id)) {
+            unlockedCluesInMemory.add(clue_id)
+            
+            if (hasSupabase) {
+              try {
+                const { data } = await supabaseAdmin
+                  .from('Hidden_Clues')
+                  .update({ is_unlocked: true, unlocked_at: new Date().toISOString() })
+                  .eq('clue_id', clue_id)
+                  .select()
+                  .single()
 
-              // 广播解锁事件
-              if (data) {
-                await broadcastClueUnlock(data as HiddenClue)
+                // 广播解锁事件
+                if (data) {
+                  await broadcastClueUnlock(data as HiddenClue)
+                }
+              } catch {
+                unlockClueInMemory(clue_id)
               }
-            } catch {
+            } else {
+              // 无 Supabase 时使用内存存储
               unlockClueInMemory(clue_id)
+              console.log('[Chat] Unlocked clue in memory:', clue_id)
             }
             unlockedClues.push(clue_id)
           }

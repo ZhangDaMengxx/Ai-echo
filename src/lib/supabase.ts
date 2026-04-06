@@ -5,18 +5,32 @@ const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
 // 创建 mock 客户端（当环境变量缺失时）
 const createMockClient = () => {
+  const mockChain = {
+    data: null,
+    error: null,
+    select: function() { return this },
+    insert: function() { return this },
+    update: function() { return this },
+    delete: function() { return this },
+    eq: function() { return this },
+    single: function() { return this },
+    order: function() { return this },
+    limit: function() { return this },
+  }
+  
+  const mockChannel = {
+    on: function() { return this },
+    subscribe: function(callback?: (status: string) => void) {
+      if (callback) callback('SUBSCRIBED')
+      return this
+    },
+    send: async function() { return { error: null } },
+    unsubscribe: async function() { return },
+  }
+  
   return {
-    from: () => ({
-      select: () => ({ data: null, error: null }),
-      insert: () => ({ data: null, error: null }),
-      update: () => ({ data: null, error: null }),
-      delete: () => ({ data: null, error: null }),
-      eq: () => ({ data: null, error: null }),
-      single: () => ({ data: null, error: null }),
-    }),
-    channel: () => ({
-      on: () => ({ subscribe: () => ({}) }),
-    }),
+    from: () => mockChain,
+    channel: () => mockChannel,
     removeChannel: () => {},
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } as any
