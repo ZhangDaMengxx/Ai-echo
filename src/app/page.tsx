@@ -14,6 +14,7 @@ import { DialogueTags } from '@/components/DialogueTags';
 import { useTheme } from '@/components/ThemeProvider';
 import { PipelineCalibration, DraftNode } from '@/components/PipelineCalibration';
 import { FateChoice } from '@/components/FateChoice';
+import { NodePreview } from '@/components/NodePreview';
 import { extractNodes, commitNodes, CharacterBase } from '@/lib/pipeline';
 import { fetchNode, sendChatMessage, ChatMessage } from '@/lib/chat';
 import { localDb } from '@/lib/localDb';
@@ -61,6 +62,10 @@ export default function TestPage() {
 	// 命运抉择状态
 	const [showFateChoice, setShowFateChoice] = useState(false);
 	const [currentNodeId, setCurrentNodeId] = useState<string | null>(null);
+
+	// 节点预览状态
+	const [showNodePreview, setShowNodePreview] = useState(false);
+	const [previewNode, setPreviewNode] = useState<{ id: string; title: string; date: string; description?: string; emotion?: string; salienceScore?: number } | null>(null);
 
 	// Pipeline 校准状态
 	const [draftNodes, setDraftNodes] = useState<DraftNode[]>([]);
@@ -329,8 +334,31 @@ export default function TestPage() {
 		]);
 	};
 
-	const handleNodeClick = (node: { id: string; title?: string; description?: string }) => {
-		loadNodeAndStartChat(node.id);
+	const handleNodeClick = (node: { id: string; title?: string; description?: string; date?: string; emotion?: string; salienceScore?: number }) => {
+		// 显示节点预览框，而不是直接跳转
+		setPreviewNode({
+			id: node.id,
+			title: node.title || '未命名',
+			date: node.date || '',
+			description: node.description,
+			emotion: node.emotion,
+			salienceScore: node.salienceScore,
+		});
+		setShowNodePreview(true);
+	};
+
+	const handlePreviewConfirm = () => {
+		// 确认后进入对话
+		if (previewNode) {
+			setShowNodePreview(false);
+			loadNodeAndStartChat(previewNode.id);
+		}
+	};
+
+	const handlePreviewCancel = () => {
+		// 取消预览
+		setShowNodePreview(false);
+		setPreviewNode(null);
 	};
 
 
@@ -441,6 +469,13 @@ export default function TestPage() {
 					{currentPage === 'story' && (
 						<motion.div key="story" className="w-full h-full" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
 							<StoryCarousel nodes={storyNodes} onNodeClick={handleNodeClick} subjectName={aiName} />
+							<NodePreview
+								node={previewNode}
+								isOpen={showNodePreview}
+								onConfirm={handlePreviewConfirm}
+								onCancel={handlePreviewCancel}
+								subjectName={aiName}
+							/>
 						</motion.div>
 					)}
 					{currentPage === 'dialogue' && (

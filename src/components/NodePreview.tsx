@@ -180,10 +180,10 @@ export function NodePreview({
 									transition={{ delay: 0.6 }}
 									className="flex justify-center gap-6 mt-12"
 								>
-									<GlassButton onClick={onCancel} variant="secondary">
+									<GlassButton onClick={onCancel}>
 										返回
 									</GlassButton>
-									<GlassButton onClick={onConfirm} variant="primary">
+									<GlassButton onClick={onConfirm} active>
 										进入回忆
 									</GlassButton>
 								</motion.div>
