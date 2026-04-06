@@ -10,6 +10,7 @@ const memoryStorage = {
 	clues: new Map<string, unknown>(),
 	branches: new Map<string, unknown>(),
 	profile: new Map<string, unknown>(),
+	characters: new Map<string, unknown>(),
 };
 
 // 创建模拟 IDBRequest
@@ -110,6 +111,7 @@ describe('localDb', () => {
 		memoryStorage.clues.clear();
 		memoryStorage.branches.clear();
 		memoryStorage.profile.clear();
+		memoryStorage.characters.clear();
 		
 		// 强制重新初始化
 		(localDb as unknown as { db: unknown }).db = null;

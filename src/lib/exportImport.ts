@@ -168,7 +168,8 @@ export async function importFromJSON(
 				}
 
 				// 插入节点（去除自动生成的字段）
-				const { node_id: _, created_at: __, ...nodeData } = node;
+				// eslint-disable-next-line @typescript-eslint/no-unused-vars
+				const { node_id: _nodeId, created_at: _createdAt, ...nodeData } = node;
 				await localDb.insertNode(nodeData);
 				nodeCount++;
 			}
@@ -177,7 +178,8 @@ export async function importFromJSON(
 		// 导入线索
 		if (backup.data.clues && Array.isArray(backup.data.clues)) {
 			for (const clue of backup.data.clues) {
-				const { clue_id, ...clueData } = clue;
+				// eslint-disable-next-line @typescript-eslint/no-unused-vars
+				const { clue_id: _clueId, ...clueData } = clue;
 				await localDb.insertClue(clueData);
 				clueCount++;
 			}
@@ -186,7 +188,8 @@ export async function importFromJSON(
 		// 导入 IF 线分支
 		if (backup.data.branches && Array.isArray(backup.data.branches)) {
 			for (const branch of backup.data.branches) {
-				const { branch_id, created_at, ...branchData } = branch;
+				// eslint-disable-next-line @typescript-eslint/no-unused-vars
+				const { branch_id: _branchId, created_at: _createdAt2, ...branchData } = branch;
 				await localDb.insertBranch(branchData);
 				branchCount++;
 			}

@@ -118,10 +118,10 @@ export default function CreatePage() {
 			});
 			
 			if (profile) {
-				await localDb.updateProfile(character.id, {
+				await localDb.updateProfileByCharacter(character.id, {
 					...profile,
 					global_vibe: 'neutral'
-				} as import('@/lib/localDb').CharacterProfile);
+				});
 			}
 			
 			if (nodes.length > 0) {

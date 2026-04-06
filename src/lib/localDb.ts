@@ -77,8 +77,18 @@ const DB_VERSION = 3;
 class LocalDatabase {
 	private db: IDBDatabase | null = null;
 
+	// 检查是否在服务端
+	private isServer(): boolean {
+		return typeof window === 'undefined' || typeof indexedDB === 'undefined';
+	}
+
 	async init(): Promise<void> {
 		if (this.db) return;
+		
+		// 服务端渲染时跳过初始化
+		if (this.isServer()) {
+			return;
+		}
 
 		return new Promise((resolve, reject) => {
 			const request = indexedDB.open(DB_NAME, DB_VERSION);
@@ -247,6 +257,7 @@ class LocalDatabase {
 	// ========== 人物操作 ==========
 	async getAllCharacters(): Promise<Character[]> {
 		await this.init();
+		if (this.isServer() || !this.db) return [];
 		return new Promise((resolve, reject) => {
 			const tx = this.db!.transaction('characters', 'readonly');
 			const store = tx.objectStore('characters');
@@ -263,6 +274,7 @@ class LocalDatabase {
 
 	async getCharacterById(id: string): Promise<Character | null> {
 		await this.init();
+		if (this.isServer() || !this.db) return null;
 		return new Promise((resolve, reject) => {
 			const tx = this.db!.transaction('characters', 'readonly');
 			const store = tx.objectStore('characters');
@@ -394,6 +406,10 @@ class LocalDatabase {
 	async updateCharacterStats(id: string): Promise<void> {
 		await this.init();
 
+		// 检查人物是否存在，不存在则静默返回
+		const char = await this.getCharacterById(id);
+		if (!char) return;
+
 		const [nodes, clues, branches] = await Promise.all([
 			this.getNodesByCharacter(id),
 			this.getCluesByCharacter(id),
@@ -412,6 +428,7 @@ class LocalDatabase {
 	// ========== 按人物查询数据 ==========
 	async getNodesByCharacter(characterId: string): Promise<MemoryNode[]> {
 		await this.init();
+		if (this.isServer() || !this.db) return [];
 		return new Promise((resolve, reject) => {
 			const tx = this.db!.transaction('nodes', 'readonly');
 			const store = tx.objectStore('nodes');
@@ -493,6 +510,7 @@ class LocalDatabase {
 	// ========== 节点操作 ==========
 	async getAllNodes(): Promise<MemoryNode[]> {
 		await this.init();
+		if (this.isServer() || !this.db) return [];
 		return new Promise((resolve, reject) => {
 			const tx = this.db!.transaction('nodes', 'readonly');
 			const store = tx.objectStore('nodes');
@@ -509,6 +527,7 @@ class LocalDatabase {
 
 	async getNodeById(nodeId: string): Promise<MemoryNode | null> {
 		await this.init();
+		if (this.isServer() || !this.db) return null;
 		return new Promise((resolve, reject) => {
 			const tx = this.db!.transaction('nodes', 'readonly');
 			const store = tx.objectStore('nodes');
@@ -519,10 +538,11 @@ class LocalDatabase {
 		});
 	}
 
-	async insertNode(node: Omit<MemoryNode, 'node_id' | 'created_at'>): Promise<MemoryNode> {
+	async insertNode(node: Omit<MemoryNode, 'node_id' | 'created_at' | 'character_id'> & { character_id?: string }): Promise<MemoryNode> {
 		await this.init();
 		const newNode: MemoryNode = {
 			...node,
+			character_id: node.character_id || 'default_character',
 			node_id: `node_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
 			created_at: new Date().toISOString(),
 		};
@@ -534,7 +554,7 @@ class LocalDatabase {
 
 			request.onsuccess = () => {
 				// 更新人物统计
-				this.updateCharacterStats(node.character_id);
+				this.updateCharacterStats(newNode.character_id);
 				resolve(newNode);
 			};
 			request.onerror = () => reject(request.error);
@@ -614,6 +634,7 @@ class LocalDatabase {
 	// ========== 线索操作 ==========
 	async getCluesByNodeId(nodeId: string): Promise<HiddenClue[]> {
 		await this.init();
+		if (this.isServer() || !this.db) return [];
 		return new Promise((resolve, reject) => {
 			const tx = this.db!.transaction('clues', 'readonly');
 			const store = tx.objectStore('clues');
@@ -625,10 +646,11 @@ class LocalDatabase {
 		});
 	}
 
-	async insertClue(clue: Omit<HiddenClue, 'clue_id'>): Promise<HiddenClue> {
+	async insertClue(clue: Omit<HiddenClue, 'clue_id' | 'character_id'> & { character_id?: string }): Promise<HiddenClue> {
 		await this.init();
 		const newClue: HiddenClue = {
 			...clue,
+			character_id: clue.character_id || 'default_character',
 			clue_id: `clue_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
 		};
 
@@ -638,7 +660,7 @@ class LocalDatabase {
 			const request = store.put(newClue);
 
 			request.onsuccess = () => {
-				this.updateCharacterStats(clue.character_id);
+				this.updateCharacterStats(newClue.character_id);
 				resolve(newClue);
 			};
 			request.onerror = () => reject(request.error);
@@ -667,7 +689,6 @@ class LocalDatabase {
 
 	async deleteClue(clueId: string): Promise<void> {
 		await this.init();
-		const clue = await this.getCluesByCharacter(''); // 需要获取clue信息，这里简化处理
 		return new Promise((resolve, reject) => {
 			const tx = this.db!.transaction('clues', 'readwrite');
 			const store = tx.objectStore('clues');
@@ -681,6 +702,7 @@ class LocalDatabase {
 	// ========== IF线操作 ==========
 	async getBranchesByNodeId(nodeId: string): Promise<IfLineBranch[]> {
 		await this.init();
+		if (this.isServer() || !this.db) return [];
 		return new Promise((resolve, reject) => {
 			const tx = this.db!.transaction('branches', 'readonly');
 			const store = tx.objectStore('branches');
@@ -692,10 +714,11 @@ class LocalDatabase {
 		});
 	}
 
-	async insertBranch(branch: Omit<IfLineBranch, 'branch_id' | 'created_at'>): Promise<IfLineBranch> {
+	async insertBranch(branch: Omit<IfLineBranch, 'branch_id' | 'created_at' | 'character_id'> & { character_id?: string }): Promise<IfLineBranch> {
 		await this.init();
 		const newBranch: IfLineBranch = {
 			...branch,
+			character_id: branch.character_id || 'default_character',
 			branch_id: `branch_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
 			created_at: new Date().toISOString(),
 		};
@@ -706,7 +729,7 @@ class LocalDatabase {
 			const request = store.put(newBranch);
 
 			request.onsuccess = () => {
-				this.updateCharacterStats(branch.character_id);
+				this.updateCharacterStats(newBranch.character_id);
 				resolve(newBranch);
 			};
 			request.onerror = () => reject(request.error);

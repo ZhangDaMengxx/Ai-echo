@@ -6,7 +6,7 @@
 // ============================================================
 
 import { DraftNode } from '@/components/PipelineCalibration';
-import { localDb, CharacterProfile, HiddenClue, MemoryNode } from './localDb';
+import { localDb, CharacterProfile, HiddenClue } from './localDb';
 
 // 生成唯一ID
 function generateId(): string {
