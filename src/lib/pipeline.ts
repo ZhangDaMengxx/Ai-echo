@@ -5,7 +5,12 @@
 // ============================================================
 
 import { DraftNode } from '@/components/PipelineCalibration';
-import { localDb, CharacterProfile } from './localDb';
+import { localDb, CharacterProfile, HiddenClue } from './localDb';
+
+// 生成唯一ID
+function generateId(): string {
+	return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+}
 
 export interface CharacterBase {
 	name: string;
@@ -79,23 +84,28 @@ export async function commitNodes(
 	nodeIds: string[];
 }> {
 	// 转换为本地存储格式
-	const payload = nodes.map((node) => ({
-		event_date: node.event_date || new Date().toISOString().split('T')[0],
-		core_event: node.core_event,
-		npc_state: {
-			current_emotion: node.npc_state?.current_emotion || '平静',
-			attitude_towards_user: node.npc_state?.attitude_towards_user || '中性',
-		},
-		salience_score: node.salience_score,
-		hidden_clues: (node.hidden_clues || []).map(c => ({
-			trigger_condition: c.trigger,
-			clue_content: c.content,
-			is_unlocked: false,
-		})),
-		memory_source: node.memory_source as 'txt_extraction' | 'user_supplement',
-		opening_mode: node.opening_mode as 'action_driven' | 'dialogue_driven',
-		character_name: characterBase?.name,
-	}));
+	const payload = nodes.map((node) => {
+		const nodeId = generateId();
+		return {
+			event_date: node.event_date || new Date().toISOString().split('T')[0],
+			core_event: node.core_event,
+			npc_state: {
+				current_emotion: node.npc_state?.current_emotion || '平静',
+				attitude_towards_user: node.npc_state?.attitude_towards_user || '中性',
+			},
+			salience_score: node.salience_score,
+			hidden_clues: (node.hidden_clues || []).map((c): HiddenClue => ({
+				clue_id: generateId(),
+				node_id: nodeId,
+				trigger_condition: c.trigger,
+				clue_content: c.content,
+				is_unlocked: false,
+			})),
+			memory_source: node.memory_source as 'txt_extraction' | 'user_supplement',
+			opening_mode: node.opening_mode as 'action_driven' | 'dialogue_driven',
+			character_name: characterBase?.name,
+		};
+	});
 
 	// 使用本地 IndexedDB 存储
 	const profile: CharacterProfile | undefined = characterBase ? {
