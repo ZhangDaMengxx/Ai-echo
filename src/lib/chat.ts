@@ -110,12 +110,14 @@ export async function sendChatMessage(params: ChatParams): Promise<ChatResult> {
 		}
 	}
 	
-	// RAG: 检索相关记忆
+	// RAG: 检索相关记忆（只检索当前时间点之前的记忆）
 	let ragContext: RAGContext | null = null
 	if (params.enableRAG && params.characterId) {
 		try {
-			ragContext = await getRAGContext(params.message, params.characterId)
-			console.log('[Chat] RAG检索到', ragContext.retrievedMemories.length, '条记忆')
+			// 从当前节点获取时间点，确保不检索"未来"的记忆
+			const currentDate = params.nodeData?.event_date;
+			ragContext = await getRAGContext(params.message, params.characterId, currentDate);
+			console.log('[Chat] RAG检索到', ragContext.retrievedMemories.length, '条记忆', currentDate ? `(当前时间: ${currentDate})` : '');
 		} catch (err) {
 			console.warn('[Chat] RAG检索失败:', err)
 		}

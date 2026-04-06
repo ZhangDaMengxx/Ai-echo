@@ -23,6 +23,9 @@ export interface RAGContext {
 	contextString: string;
 }
 
+// 默认当前时间（如果没有提供）
+const DEFAULT_CURRENT_DATE = new Date().toISOString().split('T')[0];
+
 // 本地缓存节点向量（避免重复计算）
 const nodeEmbeddingCache = new Map<string, number[]>();
 
@@ -62,7 +65,8 @@ export async function retrieveRelevantMemories(
 	query: string,
 	characterId: string,
 	topK = 3,
-	threshold = 0.25  // 降低阈值，避免过滤掉所有结果
+	threshold = 0.25,  // 降低阈值，避免过滤掉所有结果
+	currentDate?: string  // 当前时间点，只检索此日期之前的记忆
 ): Promise<RetrievedMemory[]> {
 	try {
 		console.log('[RAG] 开始检索:', { query: query.slice(0, 30), characterId });
@@ -79,17 +83,22 @@ export async function retrieveRelevantMemories(
 		});
 		
 		// 2. 获取该人物的所有节点
-		const nodes = await localDb.getNodesByCharacter(characterId);
-		console.log('[RAG] 人物节点数:', nodes.length);
+		const allNodes = await localDb.getNodesByCharacter(characterId);
+		
+		// 时间过滤：只保留当前时间点之前的记忆
+		const effectiveDate = currentDate || DEFAULT_CURRENT_DATE;
+		const nodes = allNodes.filter(node => node.event_date <= effectiveDate);
+		
+		console.log('[RAG] 人物节点数:', allNodes.length, '时间过滤后:', nodes.length, '当前时间:', effectiveDate);
 		
 		if (nodes.length === 0) {
-			console.log('[RAG] 无节点数据，跳过检索');
+			console.log('[RAG] 无节点数据（或都在未来），跳过检索');
 			return [];
 		}
 		
-		// 显示前3个节点摘要
+		// 显示前3个节点摘要（包含时间）
 		nodes.slice(0, 3).forEach((n, i) => {
-			console.log(`[RAG] 节点[${i}]`, n.node_id, n.core_event?.slice(0, 30));
+			console.log(`[RAG] 节点[${i}] ${n.event_date} ${n.core_event?.slice(0, 30)}`);
 		});
 		
 		// 3. 计算相似度并排序
@@ -177,9 +186,10 @@ export function buildRAGContext(memories: RetrievedMemory[]): string {
  */
 export async function getRAGContext(
 	query: string,
-	characterId: string
+	characterId: string,
+	currentDate?: string
 ): Promise<RAGContext> {
-	const retrievedMemories = await retrieveRelevantMemories(query, characterId);
+	const retrievedMemories = await retrieveRelevantMemories(query, characterId, 3, 0.25, currentDate);
 	const contextString = buildRAGContext(retrievedMemories);
 	
 	return {
