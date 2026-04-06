@@ -37,11 +37,13 @@ export const VIRTUAL_LIST_CONFIG = {
 /**
  * 记忆化函数 - 缓存计算结果
  */
-export function memoize<T extends (...args: unknown[]) => unknown>(
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function memoize<T extends (...args: any[]) => any>(
 	fn: T,
 	maxSize: number = MEMO_CONFIG.maxSize
 ): T {
-	const cache = new Map<string, { value: ReturnType<T>; timestamp: number }>();
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	const cache = new Map<string, { value: any; timestamp: number }>();
 
 	return ((...args: unknown[]) => {
 		const key = JSON.stringify(args);
