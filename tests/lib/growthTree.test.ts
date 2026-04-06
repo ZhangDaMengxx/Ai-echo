@@ -10,22 +10,31 @@ import {
 	type GrowthTreeNode,
 	type GrowthMetrics,
 } from '../../src/lib/growthTree';
+import { MemoryNode } from '../../src/lib/localDb';
 
 describe('Growth Tree', () => {
 	describe('generateGrowthTree', () => {
 		it('should generate tree from memory nodes', () => {
-			const nodes = [
+			const nodes: MemoryNode[] = [
 				{
 					node_id: '1',
 					event_date: '2026-01-01',
 					npc_state: { current_emotion: 'calm', attitude_towards_user: 'friendly' },
 					salience_score: 7,
+					core_event: '事件1',
+					memory_source: 'txt_extraction',
+					opening_mode: 'dialogue_driven',
+					created_at: new Date().toISOString(),
 				},
 				{
 					node_id: '2',
 					event_date: '2026-02-01',
 					npc_state: { current_emotion: 'joyful', attitude_towards_user: 'close' },
 					salience_score: 8,
+					core_event: '事件2',
+					memory_source: 'txt_extraction',
+					opening_mode: 'dialogue_driven',
+					created_at: new Date().toISOString(),
 				},
 			];
 
@@ -42,12 +51,16 @@ describe('Growth Tree', () => {
 		});
 
 		it('should calculate node levels correctly', () => {
-			const nodes = [
+			const nodes: MemoryNode[] = [
 				{
 					node_id: '1',
 					event_date: '2026-01-01',
 					npc_state: { current_emotion: 'calm', attitude_towards_user: 'neutral' },
 					salience_score: 5,
+					core_event: '事件1',
+					memory_source: 'txt_extraction',
+					opening_mode: 'dialogue_driven',
+					created_at: new Date().toISOString(),
 				},
 			];
 
@@ -57,18 +70,26 @@ describe('Growth Tree', () => {
 		});
 
 		it('should sort nodes by date', () => {
-			const nodes = [
+			const nodes: MemoryNode[] = [
 				{
 					node_id: '2',
 					event_date: '2026-02-01',
 					npc_state: { current_emotion: 'joyful', attitude_towards_user: 'close' },
 					salience_score: 8,
+					core_event: '事件2',
+					memory_source: 'txt_extraction',
+					opening_mode: 'dialogue_driven',
+					created_at: new Date().toISOString(),
 				},
 				{
 					node_id: '1',
 					event_date: '2026-01-01',
 					npc_state: { current_emotion: 'calm', attitude_towards_user: 'friendly' },
 					salience_score: 7,
+					core_event: '事件1',
+					memory_source: 'txt_extraction',
+					opening_mode: 'dialogue_driven',
+					created_at: new Date().toISOString(),
 				},
 			];
 
@@ -80,18 +101,26 @@ describe('Growth Tree', () => {
 
 	describe('calculateGrowthMetrics', () => {
 		it('should calculate emotional growth', () => {
-			const nodes = [
+			const nodes: MemoryNode[] = [
 				{
 					node_id: '1',
 					event_date: '2026-01-01',
 					npc_state: { current_emotion: 'sad', attitude_towards_user: 'distant' },
 					salience_score: 5,
+					core_event: '事件1',
+					memory_source: 'txt_extraction',
+					opening_mode: 'dialogue_driven',
+					created_at: new Date().toISOString(),
 				},
 				{
 					node_id: '2',
 					event_date: '2026-02-01',
 					npc_state: { current_emotion: 'joyful', attitude_towards_user: 'close' },
 					salience_score: 9,
+					core_event: '事件2',
+					memory_source: 'txt_extraction',
+					opening_mode: 'dialogue_driven',
+					created_at: new Date().toISOString(),
 				},
 			];
 
@@ -100,12 +129,16 @@ describe('Growth Tree', () => {
 		});
 
 		it('should calculate relationship depth', () => {
-			const nodes = [
+			const nodes: MemoryNode[] = [
 				{
 					node_id: '1',
 					event_date: '2026-01-01',
 					npc_state: { current_emotion: 'calm', attitude_towards_user: 'neutral' },
 					salience_score: 5,
+					core_event: '事件1',
+					memory_source: 'txt_extraction',
+					opening_mode: 'dialogue_driven',
+					created_at: new Date().toISOString(),
 				},
 			];
 
@@ -115,9 +148,9 @@ describe('Growth Tree', () => {
 		});
 
 		it('should calculate total memories', () => {
-			const nodes = [
-				{ node_id: '1', event_date: '2026-01-01', npc_state: { current_emotion: 'calm' }, salience_score: 7 },
-				{ node_id: '2', event_date: '2026-02-01', npc_state: { current_emotion: 'joyful' }, salience_score: 8 },
+			const nodes: MemoryNode[] = [
+				{ node_id: '1', event_date: '2026-01-01', npc_state: { current_emotion: 'calm', attitude_towards_user: '中性' }, salience_score: 7, core_event: '事件1', memory_source: 'txt_extraction', opening_mode: 'dialogue_driven', created_at: new Date().toISOString() },
+				{ node_id: '2', event_date: '2026-02-01', npc_state: { current_emotion: 'joyful', attitude_towards_user: '友好' }, salience_score: 8, core_event: '事件2', memory_source: 'txt_extraction', opening_mode: 'dialogue_driven', created_at: new Date().toISOString() },
 			];
 
 			const metrics = calculateGrowthMetrics(nodes);
@@ -125,18 +158,26 @@ describe('Growth Tree', () => {
 		});
 
 		it('should calculate timespan', () => {
-			const nodes = [
+			const nodes: MemoryNode[] = [
 				{
 					node_id: '1',
 					event_date: '2026-01-01',
-					npc_state: { current_emotion: 'calm' },
+					npc_state: { current_emotion: 'calm', attitude_towards_user: '中性' },
 					salience_score: 7,
+					core_event: '事件1',
+					memory_source: 'txt_extraction',
+					opening_mode: 'dialogue_driven',
+					created_at: new Date().toISOString(),
 				},
 				{
 					node_id: '2',
 					event_date: '2026-03-01',
-					npc_state: { current_emotion: 'joyful' },
+					npc_state: { current_emotion: 'joyful', attitude_towards_user: '友好' },
 					salience_score: 8,
+					core_event: '事件2',
+					memory_source: 'txt_extraction',
+					opening_mode: 'dialogue_driven',
+					created_at: new Date().toISOString(),
 				},
 			];
 

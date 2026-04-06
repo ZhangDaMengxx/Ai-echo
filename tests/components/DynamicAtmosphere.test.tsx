@@ -8,6 +8,7 @@ import React from 'react';
 // ============================================================
 
 // Mock canvas
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const mockGetContext = vi.fn(() => ({
 	fillRect: vi.fn(),
 	fillStyle: '',
@@ -21,7 +22,8 @@ const mockGetContext = vi.fn(() => ({
 	lineTo: vi.fn(),
 	stroke: vi.fn(),
 	strokeStyle: '',
-}));
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+}) as any);
 
 // 测试情绪-色彩映射配置
 const EMOTION_THEME_MAP = {

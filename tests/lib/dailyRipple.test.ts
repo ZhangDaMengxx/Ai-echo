@@ -12,17 +12,21 @@ import {
 	type DailyRipple,
 	type RippleInsight,
 } from '../../src/lib/dailyRipple';
+import { MemoryNode } from '../../src/lib/localDb';
 
 describe('Daily Ripple', () => {
 	describe('generateDailyRipple', () => {
 		it('should generate ripple for today', () => {
-			const memoryNodes = [
+			const memoryNodes: MemoryNode[] = [
 				{
 					node_id: '1',
 					event_date: new Date().toISOString().split('T')[0],
-					npc_state: { current_emotion: 'joyful' },
+					npc_state: { current_emotion: 'joyful', attitude_towards_user: '友好' },
 					salience_score: 8,
 					core_event: '开心的事情',
+					memory_source: 'txt_extraction',
+					opening_mode: 'dialogue_driven',
+					created_at: new Date().toISOString(),
 				},
 			];
 
@@ -32,13 +36,16 @@ describe('Daily Ripple', () => {
 		});
 
 		it('should use historical data when no recent nodes', () => {
-			const memoryNodes = [
+			const memoryNodes: MemoryNode[] = [
 				{
 					node_id: '1',
 					event_date: '2025-01-01',
-					npc_state: { current_emotion: 'calm' },
+					npc_state: { current_emotion: 'calm', attitude_towards_user: '中性' },
 					salience_score: 7,
 					core_event: '过去的事情',
+					memory_source: 'txt_extraction',
+					opening_mode: 'dialogue_driven',
+					created_at: new Date().toISOString(),
 				},
 			];
 
@@ -54,20 +61,26 @@ describe('Daily Ripple', () => {
 		});
 
 		it('should calculate resonance score', () => {
-			const memoryNodes = [
+			const memoryNodes: MemoryNode[] = [
 				{
 					node_id: '1',
 					event_date: new Date().toISOString().split('T')[0],
-					npc_state: { current_emotion: 'joyful' },
+					npc_state: { current_emotion: 'joyful', attitude_towards_user: '友好' },
 					salience_score: 8,
 					core_event: '事件1',
+					memory_source: 'txt_extraction',
+					opening_mode: 'dialogue_driven',
+					created_at: new Date().toISOString(),
 				},
 				{
 					node_id: '2',
 					event_date: new Date().toISOString().split('T')[0],
-					npc_state: { current_emotion: 'hopeful' },
+					npc_state: { current_emotion: 'hopeful', attitude_towards_user: '鼓励' },
 					salience_score: 7,
 					core_event: '事件2',
+					memory_source: 'txt_extraction',
+					opening_mode: 'dialogue_driven',
+					created_at: new Date().toISOString(),
 				},
 			];
 

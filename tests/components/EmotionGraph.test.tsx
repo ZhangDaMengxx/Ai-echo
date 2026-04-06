@@ -6,6 +6,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { EmotionGraph } from '../../src/components/EmotionGraph';
+import { EmotionNode, EmotionCluster } from '../../src/lib/emotionResonance';
 
 // Mock Canvas
 HTMLCanvasElement.prototype.getContext = vi.fn(() => ({
@@ -30,7 +31,7 @@ HTMLCanvasElement.prototype.getContext = vi.fn(() => ({
 })) as any;
 
 describe('EmotionGraph', () => {
-	const mockNodes = [
+	const mockNodes: EmotionNode[] = [
 		{ id: '1', emotion: 'calm', intensity: 0.8, date: '2026-01-01' },
 		{ id: '2', emotion: 'joyful', intensity: 0.7, date: '2026-01-02' },
 		{ id: '3', emotion: 'angry', intensity: 0.9, date: '2026-01-03' },
@@ -89,7 +90,7 @@ describe('EmotionGraph', () => {
 	});
 
 	it('should render with clusters', () => {
-		const mockClusters = [
+		const mockClusters: EmotionCluster[] = [
 			{
 				id: 'cluster_1',
 				nodes: ['1', '2'],

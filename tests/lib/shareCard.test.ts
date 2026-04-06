@@ -9,6 +9,7 @@ import {
 	generateCardSVG,
 	downloadCard,
 	type ShareCardTemplate,
+	type ShareCardData,
 } from '../../src/lib/shareCard';
 
 describe('ShareCard', () => {
@@ -73,12 +74,12 @@ describe('ShareCard', () => {
 
 	describe('generateCardSVG', () => {
 		it('should generate valid SVG string', () => {
-			const cardData = {
+			const cardData: ShareCardData = {
 				title: '测试标题',
 				emotion: 'joyful',
 				date: '2026年4月6日',
 				intensity: 0.8,
-				template: 'modern' as const,
+				template: 'modern',
 				color: '#fbbf24',
 			};
 
@@ -88,12 +89,12 @@ describe('ShareCard', () => {
 		});
 
 		it('should include title in SVG', () => {
-			const cardData = {
+			const cardData: ShareCardData = {
 				title: '特别的回忆',
 				emotion: 'joyful',
 				date: '2026年4月6日',
 				intensity: 0.8,
-				template: 'modern' as const,
+				template: 'modern',
 				color: '#fbbf24',
 			};
 
@@ -102,12 +103,12 @@ describe('ShareCard', () => {
 		});
 
 		it('should include emotion color', () => {
-			const cardData = {
+			const cardData: ShareCardData = {
 				title: '测试',
 				emotion: 'calm',
 				date: '2026年4月6日',
 				intensity: 0.7,
-				template: 'modern' as const,
+				template: 'modern',
 				color: '#00d4ff',
 			};
 

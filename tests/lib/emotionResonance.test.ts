@@ -13,6 +13,7 @@ import {
 	type EmotionNode,
 	type EmotionEdge,
 	type EmotionCluster,
+	type EmotionType,
 } from '../../src/lib/emotionResonance';
 
 describe('Emotion Resonance Network', () => {
@@ -57,7 +58,7 @@ describe('Emotion Resonance Network', () => {
 		});
 
 		it('should handle all defined emotions', () => {
-			const emotions = ['calm', 'angry', 'sad', 'joyful', 'melancholy', 'hopeful', 'passionate', 'mysterious'];
+			const emotions: EmotionType[] = ['calm', 'angry', 'sad', 'joyful', 'melancholy', 'hopeful', 'passionate', 'mysterious'];
 			for (const e1 of emotions) {
 				for (const e2 of emotions) {
 					const score = calculateEmotionResonance(e1, e2);
