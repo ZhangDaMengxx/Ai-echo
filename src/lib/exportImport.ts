@@ -212,7 +212,7 @@ export async function importFromJSON(
 		}
 
 		// 处理 v1.0 格式（无人物信息，创建默认人物）
-		let defaultCharacterId = 'default_character';
+		const defaultCharacterId = 'default_character';
 		if (backup.version === '1.0') {
 			// 检查是否已存在默认人物
 			const existing = await localDb.getCharacterById(defaultCharacterId);

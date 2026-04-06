@@ -27,7 +27,7 @@ import Link from 'next/link';
 import { PipelineCalibration, DraftNode } from '@/components/PipelineCalibration';
 import { FateChoice } from '@/components/FateChoice';
 import { NodePreview } from '@/components/NodePreview';
-import { extractNodes, commitNodes, commitNodesLegacy, CharacterBase } from '@/lib/pipeline';
+import { extractNodes, commitNodes, CharacterBase } from '@/lib/pipeline';
 import { fetchNode, sendChatMessage, ChatMessage } from '@/lib/chat';
 import { localDb } from '@/lib/localDb';
 import { useCurrentCharacter } from '@/hooks/useCurrentCharacter';
