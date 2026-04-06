@@ -91,11 +91,11 @@ function generateCacheKey(message: string, context?: unknown[]): string {
  */
 function cleanExpiredCache() {
 	const now = Date.now();
-	for (const [key, value] of emotionCache.entries()) {
+	emotionCache.forEach((value, key) => {
 		if (now - value.timestamp > CACHE_TTL) {
 			emotionCache.delete(key);
 		}
-	}
+	});
 }
 
 /**

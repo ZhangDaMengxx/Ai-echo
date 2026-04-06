@@ -298,19 +298,20 @@ class LocalDatabase {
 
 	// ========== 批量操作 ==========
 	async commitMemoryBatch(
-		nodes: Array<Omit<MemoryNode, 'node_id' | 'created_at'>>,
+		nodes: Array<Omit<MemoryNode, 'node_id' | 'created_at'> & { hidden_clues?: HiddenClue[] }>,
 		characterBase?: CharacterProfile
 	): Promise<{ nodeIds: string[]; clueCount: number }> {
 		const nodeIds: string[] = [];
 		let clueCount = 0;
 
 		for (const nodeData of nodes) {
-			const node = await this.insertNode(nodeData);
+			const { hidden_clues, ...nodeWithoutClues } = nodeData;
+			const node = await this.insertNode(nodeWithoutClues);
 			nodeIds.push(node.node_id);
 
 			// 插入关联线索
-			if (nodeData.hidden_clues) {
-				for (const clue of nodeData.hidden_clues as HiddenClue[]) {
+			if (hidden_clues) {
+				for (const clue of hidden_clues) {
 					await this.insertClue({
 						...clue,
 						node_id: node.node_id,

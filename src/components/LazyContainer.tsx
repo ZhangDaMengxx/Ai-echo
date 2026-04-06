@@ -55,10 +55,10 @@ export function withLazyLoad<P extends object>(
 	return function LazyWrapper(props: P) {
 		return (
 			<Suspense fallback={fallback}>
-				<LazyComponent {...props} />
+				<LazyComponent {...(props as any)} />
 			</Suspense>
 		);
-	};
+	} as ComponentType<P>;
 }
 
 // 懒加载图片组件

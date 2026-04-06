@@ -59,7 +59,7 @@ export function memoize<T extends (...args: any[]) => any>(
 		// 清理过期缓存
 		if (cache.size >= maxSize) {
 			const oldestKey = cache.keys().next().value;
-			cache.delete(oldestKey);
+			if (oldestKey) cache.delete(oldestKey);
 		}
 
 		cache.set(key, { value: result, timestamp: now });
