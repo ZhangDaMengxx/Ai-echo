@@ -24,6 +24,7 @@ const unlockedCluesInMemory = new Set<string>()
 
 export async function POST(request: NextRequest) {
   try {
+    const body = await request.json()
     const {
       message,
       conversationHistory,
@@ -31,7 +32,8 @@ export async function POST(request: NextRequest) {
       nodeData,
       userProfile,
       isFirstRound,
-    } = await request.json()
+      ragContext,
+    } = body
 
     // 构建System Prompt，使用传入的人物画像
     const profile = userProfile as UserProfile | undefined
@@ -45,9 +47,9 @@ export async function POST(request: NextRequest) {
     )
     
     // 注入RAG检索到的记忆上下文
-    const ragContext = body.ragContext as string | null
-    if (ragContext && ragContext.length > 0) {
-      systemPrompt += '\n\n' + ragContext
+    const ragContextStr = ragContext as string | null
+    if (ragContextStr && ragContextStr.length > 0) {
+      systemPrompt += '\n\n' + ragContextStr
     }
 
     // 构建对话历史（Qwen 格式）

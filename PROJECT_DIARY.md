@@ -41,31 +41,32 @@
 
 ## 🔄 当前活跃节点
 
-**节点**: Bug修复 - Embedding API CORS  
+**节点**: Bug修复 - Chat API 500 错误  
 **状态**: ✅ 已完成  
-**开始时间**: 2026-04-06 21:45  
-**完成时间**: 2026-04-06 22:05  
-**工时**: 20分钟
+**开始时间**: 2026-04-06 22:05  
+**完成时间**: 2026-04-06 22:10  
+**工时**: 5分钟
 
 ### 问题
-前端直接调用阿里云 Embedding API 遇到 CORS 错误：
+`/api/chat` 返回 500 错误，控制台显示：
 ```
-Access to fetch at 'https://dashscope.aliyuncs.com/...' 
-from origin 'http://localhost:3000' has been blocked by CORS policy
+ReferenceError: body is not defined
 ```
+
+### 原因
+第48行使用了 `body.ragContext`，但 `body` 变量未定义（解构前未保留）。
 
 ### 修复方案
-- [x] 创建 `/api/embedding` 后端代理 API
-- [x] 修改 `src/lib/embedding.ts` 调用本地 API
-- [x] 支持单条和批量文本向量化
+- [x] 先获取 `body = await request.json()`
+- [x] 解构时包含 `ragContext`
+- [x] 使用 `ragContextStr` 避免命名冲突
 
 ### 修改文件
-- 新增 `src/app/api/embedding/route.ts`
-- 修改 `src/lib/embedding.ts`
+- 修改 `src/app/api/chat/route.ts`
 
 ### 测试状态
 - [x] 类型检查通过
-- [ ] 功能测试（验证 RAG 正常工作）
+- [ ] 功能测试（验证对话正常工作）
 
 ### 已完成内容
 - [x] 创建 `CharacterSwitcher` 人物切换器
@@ -102,6 +103,18 @@ from origin 'http://localhost:3000' has been blocked by CORS policy
 ---
 
 ## 📋 历史记录
+
+### 2026-04-06 - Bug修复: Chat API 500 错误
+
+**问题**: `/api/chat` 返回 500，`ReferenceError: body is not defined`
+
+**原因**: 解构 `request.json()` 时未保留 `body` 变量，但后续使用了 `body.ragContext`
+
+**修复**:
+- ✅ 先获取 `body`，再解构
+- ✅ 将 `ragContext` 加入解构
+
+**修改文件**: `src/app/api/chat/route.ts`
 
 ### 2026-04-06 - Bug修复: Embedding API CORS
 
