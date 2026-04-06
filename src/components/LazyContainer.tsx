@@ -44,7 +44,7 @@ export function withLazyLoad<P extends Record<string, any>>(
 		delay?: number;
 		fallback?: React.ReactNode;
 	} = {}
-): React.FC<P> {
+): (props: P) => JSX.Element {
 	const { delay = 0, fallback = <LoadingFallback /> } = options;
 
 	const LazyComponent = React.lazy(() =>
@@ -54,15 +54,13 @@ export function withLazyLoad<P extends Record<string, any>>(
 	);
 
 	// eslint-disable-next-line react/display-name
-	const LazyWrapper: React.FC<P> = (props) => {
+	return function LazyWrapper(props: P): JSX.Element {
 		return (
 			<Suspense fallback={fallback}>
 				<LazyComponent {...props} />
 			</Suspense>
 		);
 	};
-
-	return LazyWrapper;
 }
 
 // 懒加载图片组件
