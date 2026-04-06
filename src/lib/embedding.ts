@@ -48,6 +48,18 @@ export async function generateEmbedding(text: string): Promise<number[]> {
 		
 		const embedding = data.embeddings?.[0];
 		console.log('[Embedding] First embedding:', embedding ? `length=${embedding.length}` : 'undefined');
+		
+		// 详细检查向量内容
+		if (embedding) {
+			const nonZeroCount = embedding.filter((v: number) => v !== 0).length;
+			const sum = embedding.reduce((a: number, b: number) => a + b, 0);
+			console.log('[Embedding] Vector stats:', { 
+				length: embedding.length, 
+				nonZeroCount, 
+				sum: sum.toFixed(4),
+				first5: embedding.slice(0, 5).map((v: number) => v.toFixed(4))
+			});
+		}
 
 		if (!embedding || embedding.length !== EMBEDDING_DIM) {
 			throw new Error(`Invalid embedding response: ${embedding?.length} dims`);

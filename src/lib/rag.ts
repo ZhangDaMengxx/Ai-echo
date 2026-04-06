@@ -69,8 +69,14 @@ export async function retrieveRelevantMemories(
 		
 		// 1. 生成查询向量
 		const queryEmbedding = await generateEmbedding(query);
-		const isZeroVector = queryEmbedding.every(v => v === 0);
-		console.log('[RAG] 查询向量:', isZeroVector ? '零向量(生成失败)' : '成功');
+		const nonZeroCount = queryEmbedding.filter(v => v !== 0).length;
+		const sum = queryEmbedding.reduce((a, b) => a + b, 0);
+		console.log('[RAG] 查询向量:', { 
+			length: queryEmbedding.length, 
+			nonZeroCount, 
+			sum: sum.toFixed(6),
+			first5: queryEmbedding.slice(0, 5).map(v => v.toFixed(4))
+		});
 		
 		// 2. 获取该人物的所有节点
 		const nodes = await localDb.getNodesByCharacter(characterId);
@@ -88,8 +94,21 @@ export async function retrieveRelevantMemories(
 		
 		// 3. 计算相似度并排序
 		const scoredNodes = await Promise.all(
-			nodes.map(async (node) => {
+			nodes.map(async (node, idx) => {
 				const nodeEmbedding = await getNodeEmbedding(node);
+				
+				// 调试第一个节点
+				if (idx === 0) {
+					const nodeNonZero = nodeEmbedding.filter(v => v !== 0).length;
+					const nodeSum = nodeEmbedding.reduce((a, b) => a + b, 0);
+					console.log('[RAG] 第一个节点向量:', {
+						length: nodeEmbedding.length,
+						nonZeroCount: nodeNonZero,
+						sum: nodeSum.toFixed(6),
+						first5: nodeEmbedding.slice(0, 5).map(v => v.toFixed(4))
+					});
+				}
+				
 				const similarity = cosineSimilarity(queryEmbedding, nodeEmbedding);
 				
 				return {
