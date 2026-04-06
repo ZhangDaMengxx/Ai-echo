@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { EmotionPulse, EmotionIndicator } from './EmotionPulse';
+import { EmotionWave, EmotionWaveIndicator } from './EmotionWave';
 import { EmotionType } from './DynamicAtmosphere';
 
 // ============================================================
@@ -58,9 +58,9 @@ export function AIDialog({
 
 	return (
 		<div className="relative w-full max-w-4xl">
-			{/* 情绪指示器 */}
+			{/* 情绪波形指示器 */}
 			<div className="absolute -top-14 left-0 z-20">
-				<EmotionIndicator
+				<EmotionWaveIndicator
 					emotion={emotion}
 					intensity={totalIntensity}
 					label={characterName}
@@ -87,8 +87,8 @@ export function AIDialog({
 					minHeight: '450px',
 				}}
 			>
-				{/* 情绪脉冲背景（在内容后面） */}
-				<EmotionPulse
+				{/* 情绪波形背景（ECG 心电图风格） */}
+				<EmotionWave
 					emotion={emotion}
 					intensity={totalIntensity}
 					isActive={true}
