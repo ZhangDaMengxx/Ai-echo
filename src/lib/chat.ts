@@ -1,7 +1,9 @@
 // ============================================================
 // Chat API 客户端
 // 描述: 节点对话相关 API 调用封装
-// 更新: fetchNode 使用 IndexedDB 本地存储
+// 更新: 
+//   - fetchNode 使用 IndexedDB 本地存储
+//   - sendChatMessage 支持传入人物画像
 // ============================================================
 
 import { localDb } from './localDb';
@@ -54,7 +56,7 @@ export async function fetchNode(nodeId: string): Promise<{
 	};
 }
 
-export async function sendChatMessage(params: {
+export interface ChatParams {
 	message: string
 	conversationHistory: ChatMessage[]
 	availableClues: Array<{ clue_id: string; trigger_condition: string }>
@@ -65,16 +67,43 @@ export async function sendChatMessage(params: {
 		opening_mode?: string
 	}
 	isFirstRound?: boolean
-}): Promise<{
+	/** 人物ID，用于获取画像 */
+	characterId?: string
+}
+
+export async function sendChatMessage(params: ChatParams): Promise<{
 	reply: string
 	unlockedClues: string[]
 }> {
+	// 如果传入了人物ID，从数据库获取画像
+	let userProfile: { base_archetype: Record<string, unknown> } = { 
+		base_archetype: { style: '温和平衡', logic: '理性感性并重' } 
+	}
+	
+	if (params.characterId) {
+		try {
+			const profile = await localDb.getProfileByCharacter(params.characterId)
+			if (profile) {
+				userProfile = {
+					base_archetype: {
+						style: profile.style || '温和平衡',
+						logic: profile.logic || '理性感性并重',
+						dominant_emotions: profile.dominant_emotions || ['平静'],
+						summary: profile.summary || '',
+					}
+				}
+			}
+		} catch (err) {
+			console.warn('[Chat] 获取人物画像失败，使用默认值:', err)
+		}
+	}
+
 	const res = await fetch('/api/chat', {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
 		body: JSON.stringify({
 			...params,
-			userProfile: { base_archetype: { style: '克制内敛', logic: '理性压抑型' } },
+			userProfile,
 		}),
 	})
 

@@ -166,6 +166,7 @@ export default function StoryPage() {
 				availableClues: clues || [],
 				nodeData: node,
 				isFirstRound: true,
+				characterId: character?.id,
 			});
 
 			setAiMessages([
@@ -184,6 +185,7 @@ export default function StoryPage() {
 						availableClues: [],
 						nodeData: cachedNode,
 						isFirstRound: true,
+						characterId: character?.id,
 					});
 					setAiMessages([
 						{ id: '1', role: 'system', content: `*${cachedNode.npc_state?.current_emotion || '平静'}*` },
@@ -318,6 +320,7 @@ export default function StoryPage() {
 				availableClues,
 				nodeData: activeNodeData,
 				isFirstRound: false,
+				characterId: character?.id,
 			});
 
 			setAiMessages((prev) => [

@@ -5,6 +5,17 @@ import { unlockClue as unlockClueInMemory } from '@/lib/memoryStore'
 import { broadcastClueUnlock } from '@/lib/realtime'
 import type { HiddenClue } from '@/lib/supabase'
 
+// 人物画像接口
+interface UserProfile {
+	base_archetype: {
+		style?: string
+		logic?: string
+		dominant_emotions?: string[]
+		summary?: string
+		[key: string]: unknown
+	}
+}
+
 // 检查是否有 Supabase 配置
 const hasSupabase = !!process.env.NEXT_PUBLIC_SUPABASE_URL
 
@@ -22,9 +33,10 @@ export async function POST(request: NextRequest) {
       isFirstRound,
     } = await request.json()
 
-    // 构建System Prompt
+    // 构建System Prompt，使用传入的人物画像
+    const profile = userProfile as UserProfile | undefined
     const systemPrompt = buildSystemPrompt(
-      userProfile?.base_archetype || {},
+      profile?.base_archetype || {},
       nodeData?.core_event || '',
       nodeData?.memory_source || 'txt_extraction',
       nodeData?.npc_state || {},
