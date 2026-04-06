@@ -1,11 +1,30 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
-
 // ============================================================
 // useResponsive: 响应式布局 Hook
-// 断点检测、移动端优化、触摸交互
+// 检测屏幕尺寸、断点、触摸设备，支持响应式布局
+//
+// 文件位置: src/hooks/useResponsive.ts
+// 主要依赖: React Hooks (useState, useEffect)
+// 被引用: DynamicAtmosphere, ResponsiveNav, 各响应式组件
+//
+// 导出:
+//   - useResponsive: 主 Hook
+//   - useSwipe: 触摸滑动 Hook
+//   - getBreakpoint: 获取断点函数
+//   - getParticleCount: 获取响应式粒子数量
+//   - RESPONSIVE_CONFIG: 响应式配置
+//   - SWIPE_THRESHOLD: 滑动阈值
+//
+// 使用示例:
+//   const { isMobile, breakpoint } = useResponsive();
+//   const { onTouchStart, onTouchEnd } = useSwipe({ onSwipeLeft: fn });
+//
+// 维护记录:
+//   - 2026-04-06: 创建，实现断点检测和触摸支持
 // ============================================================
+
+import { useState, useEffect, useCallback, useMemo } from 'react';
 
 export type Breakpoint = 'mobile' | 'tablet' | 'desktop';
 

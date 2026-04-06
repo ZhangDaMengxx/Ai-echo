@@ -1,12 +1,34 @@
 'use client';
 
-import React, { useEffect, useRef, useCallback } from 'react';
-import { useResponsive, getParticleCount, Breakpoint } from '../hooks/useResponsive';
-
 // ============================================================
 // DynamicAtmosphere: 动态背景氛围系统
-// 情绪-色彩映射 + 平滑过渡 + 粒子响应 + 响应式适配
+// 全局背景组件，根据情绪变化显示不同的粒子效果和颜色
+//
+// 文件位置: src/components/DynamicAtmosphere.tsx
+// 主要依赖: useResponsive (响应式粒子数量)
+// 被引用: page.tsx (全局背景)
+//
+// 导出:
+//   - EmotionType: 8种情绪类型
+//   - EMOTION_THEME_MAP: 情绪主题配置
+//   - lerpColor: 颜色插值函数
+//   - getEmotionTheme: 获取情绪配置
+//
+// Props:
+//   - emotion: 情绪类型
+//   - transitionDuration: 过渡时长 (默认500ms)
+//   - baseColor: 基础背景色
+//
+// 使用示例:
+//   <DynamicAtmosphere emotion="calm" />
+//
+// 维护记录:
+//   - 2026-04-06: 创建，实现 8 种情绪主题
+//   - 2026-04-06: 添加响应式粒子数量支持
 // ============================================================
+
+import React, { useEffect, useRef, useCallback } from 'react';
+import { useResponsive, getParticleCount, Breakpoint } from '../hooks/useResponsive';
 
 export type EmotionType = 
 	| 'calm' 

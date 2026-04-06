@@ -1,13 +1,36 @@
 'use client';
 
+// ============================================================
+// AIDialog: AI 对话展示框（集成 ECG 情绪波形）
+// 显示 AI 与用户对话，背景有情绪波形效果
+//
+// 文件位置: src/components/AIDialog.tsx
+// 主要依赖: EmotionWave, EmotionWaveIndicator, DynamicAtmosphere
+// 被引用: page.tsx (Dialogue 页面)
+//
+// Props:
+//   - messages: 消息列表
+//   - characterName: AI 人物名称
+//   - emotion: 当前情绪类型
+//   - emotionIntensity: 情绪强度 0-1
+//
+// 使用示例:
+//   <AIDialog
+//     messages={messages}
+//     characterName="ELARA"
+//     emotion="passionate"
+//     emotionIntensity={0.7}
+//   />
+//
+// 维护记录:
+//   - 2026-04-06: 创建基础对话组件
+//   - 2026-04-06: 集成 EmotionWave 波形背景
+// ============================================================
+
 import React, { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { EmotionWave, EmotionWaveIndicator } from './EmotionWave';
 import { EmotionType } from './DynamicAtmosphere';
-
-// ============================================================
-// AIDialog: AI对话展示框（集成情绪脉冲）
-// ============================================================
 
 interface Message {
 	id: string;

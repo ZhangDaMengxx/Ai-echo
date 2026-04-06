@@ -1,14 +1,36 @@
 'use client';
 
+// ============================================================
+// NodePreview: 节点预览/确认组件
+// 点击 Story 节点后放大显示，展示前情介绍并确认进入对话
+//
+// 文件位置: src/components/NodePreview.tsx
+// 主要依赖: NodeIconGenerator, GlassButton, Framer Motion
+// 被引用: StoryCarousel (onNodeClick), page.tsx
+//
+// Props:
+//   - node: 节点数据
+//   - isOpen: 是否显示
+//   - onConfirm: 确认回调
+//   - onCancel: 取消回调
+//   - subjectName: 人物名称
+//
+// 使用示例:
+//   <NodePreview
+//     node={selectedNode}
+//     isOpen={showPreview}
+//     onConfirm={() => enterDialogue()}
+//     onCancel={() => setShowPreview(false)}
+//   />
+//
+// 维护记录:
+//   - 2026-04-06: 创建，实现放大预览 + 确认流程
+// ============================================================
+
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { NodeIcon } from './NodeIconGenerator';
 import { GlassButton } from './GlassButton';
-
-// ============================================================
-// NodePreview: 节点预览/确认组件
-// 放大显示 + 前情介绍 + 确认进入
-// ============================================================
 
 export interface MemoryNode {
 	id: string;

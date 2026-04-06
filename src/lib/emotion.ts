@@ -1,6 +1,31 @@
 // ============================================================
-// 情绪分析客户端
-// 用于调用 /api/emotion/analyze 接口
+// emotion: 情绪分析客户端库
+// 封装 /api/emotion/analyze 接口调用，提供情绪分析相关工具函数
+//
+// 文件位置: src/lib/emotion.ts
+// 主要依赖: /app/api/emotion/analyze/route (API 类型)
+// 被引用: page.tsx (Dialogue 情绪分析), AIDialog
+//
+// 导出函数:
+//   - analyzeEmotion(): 分析单条消息情绪
+//   - analyzeEmotionsBatch(): 批量分析
+//   - checkEmotionServiceHealth(): 健康检查
+//   - calculateBPM(): 根据情绪计算 BPM
+//   - shouldTransitionEmotion(): 判断是否转换情绪
+//   - escalateEmotion(): 情绪升级
+//
+// 导出常量:
+//   - EMOTION_LABELS: 中文标签
+//   - EMOTION_COLORS: 颜色映射
+//   - EMOTION_ICONS: 图标映射
+//   - EMOTION_BPM: BPM 范围
+//
+// 使用示例:
+//   const result = await analyzeEmotion({ message: '你好', currentEmotion: 'calm' });
+//   const bpm = calculateBPM(result.emotion, result.intensity);
+//
+// 维护记录:
+//   - 2026-04-06: 创建，实现情绪分析客户端
 // ============================================================
 
 import type { EmotionType, EmotionAnalyzeResponse } from '@/app/api/emotion/analyze/route';

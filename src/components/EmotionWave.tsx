@@ -1,12 +1,28 @@
 'use client';
 
-import React, { useEffect, useRef, useCallback } from 'react';
-import { EmotionType } from './DynamicAtmosphere';
-
 // ============================================================
 // EmotionWave: 情绪波形组件（ECG 心电图风格）
-// 在聊天框后面显示连续波形
+// 在聊天框后面显示连续 ECG 波形，类似医院监护仪效果
+//
+// 文件位置: src/components/EmotionWave.tsx
+// 主要依赖: DynamicAtmosphere (EmotionType)
+// 被引用: AIDialog (作为主要情绪背景)
+//
+// Props:
+//   - emotion: 情绪类型 (8种)
+//   - intensity: 情绪强度 0-1
+//   - isActive: 是否激活动画
+//
+// 使用示例:
+//   <EmotionWave emotion="passionate" intensity={0.7} isActive={true} />
+//
+// 维护记录:
+//   - 2026-04-06: 创建，实现 ECG 波形绘制 (Canvas)
+//   - 2026-04-06: 添加 8 种情绪波形配置
 // ============================================================
+
+import React, { useEffect, useRef, useCallback } from 'react';
+import { EmotionType } from './DynamicAtmosphere';
 
 interface EmotionWaveProps {
 	emotion: EmotionType;

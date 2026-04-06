@@ -1,6 +1,36 @@
 // ============================================================
-// POST /api/emotion/analyze
-// 实时分析对话情绪
+// API Route: /api/emotion/analyze
+// 实时对话情绪分析接口
+//
+// 文件位置: src/app/api/emotion/analyze/route.ts
+// 主要依赖: zod (验证), Qwen API (AI 分析)
+// 被引用: src/lib/emotion.ts (客户端库)
+//
+// 路由:
+//   - POST /api/emotion/analyze: 分析情绪
+//   - GET  /api/emotion/analyze: 健康检查
+//
+// 请求体:
+//   {
+//     message: string (1-2000字)
+//     context?: Array<{role, content}> (对话上下文)
+//     currentEmotion?: EmotionType (当前情绪)
+//   }
+//
+// 响应体:
+//   {
+//     emotion: EmotionType
+//     intensity: number (0-1)
+//     confidence: number (0-1)
+//     reasoning: string
+//     suggestedTransition?: {...}
+//   }
+//
+// 缓存: 内存缓存，TTL 5分钟
+// AI 模型: Qwen Turbo
+//
+// 维护记录:
+//   - 2026-04-06: 创建，实现情绪分析 API
 // ============================================================
 
 import { NextRequest, NextResponse } from 'next/server';
