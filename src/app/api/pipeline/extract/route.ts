@@ -95,7 +95,7 @@ ${chunk.slice(0, 1500)}
     }
 
     // 尝试提取完整 JSON
-    let jsonStr = extractCompleteJson(text)
+    const jsonStr = extractCompleteJson(text)
     if (!jsonStr) {
       console.log('No complete JSON found in response:', text.slice(0, 200))
       return null
