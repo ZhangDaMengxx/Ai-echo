@@ -1,8 +1,8 @@
 # 📔 Echo Tracks 项目开发日记
 
-> 最后更新: 2026-04-06 21:30  
-> 当前版本: v0.3.5  
-> 开发状态: 🟢 实施中 - RAG记忆检索
+> 最后更新: 2026-04-06 22:05  
+> 当前版本: v0.3.6  
+> 开发状态: 🟢 实施中 - Bug修复
 
 ---
 
@@ -41,33 +41,31 @@
 
 ## 🔄 当前活跃节点
 
-**节点**: RAG记忆检索 - 对话增强  
+**节点**: Bug修复 - Embedding API CORS  
 **状态**: ✅ 已完成  
-**开始时间**: 2026-04-06 21:00  
-**完成时间**: 2026-04-06 21:30  
-**工时**: 30分钟
+**开始时间**: 2026-04-06 21:45  
+**完成时间**: 2026-04-06 22:05  
+**工时**: 20分钟
 
-### 实现内容
-- [x] 创建 `src/lib/rag.ts` - RAG检索核心模块
-  - `retrieveRelevantMemories()` - 基于向量相似度检索记忆
-  - `buildRAGContext()` - 构建记忆上下文字符串
-  - `getRAGContext()` - 完整RAG流程封装
-- [x] 修改 `src/lib/chat.ts` - 集成RAG检索
-  - 新增 `enableRAG` 参数
-  - 对话前自动检索相关记忆
-  - 返回检索结果用于调试
-- [x] 修改 `src/app/api/chat/route.ts` - 注入记忆上下文
-- [x] 修改 `src/app/story/page.tsx` - 启用RAG
+### 问题
+前端直接调用阿里云 Embedding API 遇到 CORS 错误：
+```
+Access to fetch at 'https://dashscope.aliyuncs.com/...' 
+from origin 'http://localhost:3000' has been blocked by CORS policy
+```
 
-### 技术细节
-- 向量相似度计算：余弦相似度
-- 检索阈值：0.6（可配置）
-- 返回数量：top 3（可配置）
-- 向量缓存：内存缓存避免重复计算
+### 修复方案
+- [x] 创建 `/api/embedding` 后端代理 API
+- [x] 修改 `src/lib/embedding.ts` 调用本地 API
+- [x] 支持单条和批量文本向量化
+
+### 修改文件
+- 新增 `src/app/api/embedding/route.ts`
+- 修改 `src/lib/embedding.ts`
 
 ### 测试状态
 - [x] 类型检查通过
-- [ ] 功能测试（需验证记忆召回效果）
+- [ ] 功能测试（验证 RAG 正常工作）
 
 ### 已完成内容
 - [x] 创建 `CharacterSwitcher` 人物切换器
@@ -104,6 +102,19 @@
 ---
 
 ## 📋 历史记录
+
+### 2026-04-06 - Bug修复: Embedding API CORS
+
+**问题**: 前端直接调用阿里云 API 遇到 CORS 限制
+
+**解决方案**:
+- ✅ 创建 `/api/embedding` 后端代理
+- ✅ 前端调用本地 API: `fetch('/api/embedding')`
+- ✅ 后端调用阿里云 API 并返回结果
+
+**修改文件**:
+- 新增 `src/app/api/embedding/route.ts` - 后端代理
+- 修改 `src/lib/embedding.ts` - 使用本地 API
 
 ### 2026-04-06 - RAG记忆检索实现
 

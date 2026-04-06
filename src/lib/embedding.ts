@@ -1,9 +1,7 @@
 // ============================================================
 // 文本嵌入向量模块
-// 描述: 使用 Qwen API 生成文本嵌入向量
+// 描述: 使用本地 API 生成文本嵌入向量（解决 CORS）
 // ============================================================
-
-import { QWEN_API_KEY } from './qwen';
 
 // 嵌入向量维度
 export const EMBEDDING_DIM = 768;
@@ -12,7 +10,7 @@ export const EMBEDDING_DIM = 768;
 const embeddingCache = new Map<string, number[]>();
 
 /**
- * 生成文本的嵌入向量
+ * 生成文本的嵌入向量（通过本地 API）
  * @param text - 输入文本
  * @returns 768维向量
  */
@@ -27,30 +25,20 @@ export async function generateEmbedding(text: string): Promise<number[]> {
 	const truncatedText = text.slice(0, 2000);
 
 	try {
-		const response = await fetch(
-			'https://dashscope.aliyuncs.com/api/v1/services/embeddings/text-embedding/text-embedding',
-			{
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-					'Authorization': `Bearer ${QWEN_API_KEY}`,
-				},
-				body: JSON.stringify({
-					model: 'text-embedding-v2',
-					input: {
-						texts: [truncatedText],
-					},
-				}),
-			}
-		);
+		// 使用本地 API 避免 CORS
+		const response = await fetch('/api/embedding', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ texts: [truncatedText] }),
+		});
 
 		if (!response.ok) {
 			const error = await response.json().catch(() => ({}));
-			throw new Error(error.message || `Embedding API 错误: ${response.status}`);
+			throw new Error(error.error || `Embedding API 错误: ${response.status}`);
 		}
 
 		const data = await response.json();
-		const embedding = data.output?.embeddings?.[0]?.embedding;
+		const embedding = data.embeddings?.[0];
 
 		if (!embedding || embedding.length !== EMBEDDING_DIM) {
 			throw new Error(`Invalid embedding response: ${embedding?.length} dims`);
@@ -68,7 +56,7 @@ export async function generateEmbedding(text: string): Promise<number[]> {
 }
 
 /**
- * 批量生成嵌入向量
+ * 批量生成嵌入向量（通过本地 API）
  * @param texts - 文本数组
  * @returns 向量数组
  */
@@ -82,22 +70,12 @@ export async function generateEmbeddings(texts: string[]): Promise<number[][]> {
 		const batchTexts = batch.map(t => t.slice(0, 2000));
 
 		try {
-			const response = await fetch(
-				'https://dashscope.aliyuncs.com/api/v1/services/embeddings/text-embedding/text-embedding',
-				{
-					method: 'POST',
-					headers: {
-						'Content-Type': 'application/json',
-						'Authorization': `Bearer ${QWEN_API_KEY}`,
-					},
-					body: JSON.stringify({
-						model: 'text-embedding-v2',
-						input: {
-							texts: batchTexts,
-						},
-					}),
-				}
-			);
+			// 使用本地 API 避免 CORS
+			const response = await fetch('/api/embedding', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ texts: batchTexts }),
+			});
 
 			if (!response.ok) {
 				console.warn(`[Embedding] Batch ${i / BATCH_SIZE} failed, using zero vectors`);
@@ -106,11 +84,11 @@ export async function generateEmbeddings(texts: string[]): Promise<number[][]> {
 			}
 
 			const data = await response.json();
-			const embeddings = data.output?.embeddings || [];
+			const embeddings = data.embeddings || [];
 
-			results.push(...embeddings.map((e: { embedding: number[] }) => {
-				if (e.embedding?.length === EMBEDDING_DIM) {
-					return e.embedding;
+			results.push(...embeddings.map((e: number[]) => {
+				if (e?.length === EMBEDDING_DIM) {
+					return e;
 				}
 				return new Array(EMBEDDING_DIM).fill(0);
 			}));
