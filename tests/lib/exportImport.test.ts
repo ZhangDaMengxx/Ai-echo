@@ -1,201 +1,157 @@
 // ============================================================
-// Export/Import 测试
+// exportImport 测试
+// 测试 JSON 导出/导入功能
+//
+// 文件位置: tests/lib/exportImport.test.ts
+// 测试目标: src/lib/exportImport.ts
 // ============================================================
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import {
-	exportToJSON,
-	importFromJSON,
-	validateBackupFile,
-	getStorageStats,
-	BackupData,
-} from '@/lib/exportImport';
-import { localDb, MemoryNode, HiddenClue, IfLineBranch, CharacterProfile } from '@/lib/localDb';
 
-// Mock localDb
-vi.mock('@/lib/localDb', () => ({
-	localDb: {
-		getAllNodes: vi.fn(),
-		getProfile: vi.fn(),
-		getCluesByNodeId: vi.fn(),
-		getBranchesByNodeId: vi.fn(),
-		getNodeById: vi.fn(),
-		insertNode: vi.fn(),
-		insertClue: vi.fn(),
-		insertBranch: vi.fn(),
-		updateProfile: vi.fn(),
-		clearAllNodes: vi.fn(),
-		clearAllClues: vi.fn(),
-		clearAllBranches: vi.fn(),
-		// v1.1 新增
-		getAllCharacters: vi.fn(),
-		getCharacterById: vi.fn(),
-		createCharacter: vi.fn(),
-		updateProfileByCharacter: vi.fn(),
-	},
-}));
+// Mock localDb module
+const mockExportAll = vi.fn();
+const mockImportAll = vi.fn();
 
-// Mock URL.createObjectURL and URL.revokeObjectURL
-global.URL.createObjectURL = vi.fn(() => 'blob:test');
-global.URL.revokeObjectURL = vi.fn();
-
-// Mock document methods - 使用工厂函数每次返回新对象
-const createMockAnchor = () => ({
-	href: '',
-	download: '',
-	click: vi.fn(),
-});
-
-let lastMockAnchor: ReturnType<typeof createMockAnchor>;
-
-Object.defineProperty(document, 'createElement', {
-	value: vi.fn((tagName: string) => {
-		if (tagName === 'a') {
-			lastMockAnchor = createMockAnchor();
-			return lastMockAnchor;
+vi.mock('@/lib/localDb', async (importOriginal) => {
+	const actual = await importOriginal<typeof import('@/lib/localDb')>();
+	return {
+		...actual,
+		localDb: {
+			...actual.localDb,
+			exportAll: mockExportAll,
+			importAll: mockImportAll,
 		}
-		return {};
-	}),
+	};
 });
 
-Object.defineProperty(document, 'body', {
-	value: {
-		appendChild: vi.fn(),
-		removeChild: vi.fn(),
-	},
-});
-
-// Mock localStorage
-const localStorageMock: Record<string, string> = {};
-Object.defineProperty(window, 'localStorage', {
-	value: {
-		getItem: vi.fn((key: string) => localStorageMock[key] || null),
-		setItem: vi.fn((key: string, value: string) => {
-			localStorageMock[key] = value;
-		}),
-	},
-});
+// Import after mock
+const { exportToJSON, importFromJSON, generateChecksum } = await import('@/lib/exportImport');
 
 describe('exportImport', () => {
-	const mockNode: MemoryNode = {
-		node_id: 'node_1',
-		event_date: '2024-01-15',
-		salience_score: 8,
-		core_event: '测试事件',
-		npc_state: {
-			current_emotion: '平静',
-			attitude_towards_user: '中性',
-		},
-		memory_source: 'txt_extraction',
-		opening_mode: 'dialogue_driven',
-		character_name: 'Test',
-		created_at: '2024-01-01T00:00:00Z',
-	};
-
-	const mockClue: HiddenClue = {
-		clue_id: 'clue_1',
-		node_id: 'node_1',
-		trigger_condition: '触发条件',
-		clue_content: '线索内容',
-		is_unlocked: false,
-	};
-
-	const mockBranch: IfLineBranch = {
-		branch_id: 'branch_1',
-		parent_node_id: 'node_1',
-		altered_choices: '改变的选择',
-		new_ending: '新结局',
-		emotional_tone: 'hopeful',
-		is_committed: false,
-		created_at: '2024-01-01T00:00:00Z',
-	};
-
-	const mockProfile: CharacterProfile = {
-		name: 'ELARA',
-		style: '测试风格',
-		logic: '测试逻辑',
-		dominant_emotions: ['平静'],
-		dominant_attitudes: ['中性'],
-		summary: '测试摘要',
-		global_vibe: 'neutral',
-	};
-
 	beforeEach(() => {
 		vi.clearAllMocks();
-		Object.keys(localStorageMock).forEach(key => delete localStorageMock[key]);
+		
+		// Mock URL.createObjectURL and revokeObjectURL
+		global.URL.createObjectURL = vi.fn(() => 'blob:mock-url');
+		global.URL.revokeObjectURL = vi.fn();
+		
+		// Mock document.createElement for download
+		const mockAnchor = {
+			href: '',
+			download: '',
+			click: vi.fn(),
+		};
+		document.createElement = vi.fn((tag) => {
+			if (tag === 'a') return mockAnchor as any;
+			return {} as any;
+		});
 	});
 
 	afterEach(() => {
-		vi.resetAllMocks();
+		vi.restoreAllMocks();
+	});
+
+	describe('generateChecksum', () => {
+		it('应该为相同数据生成相同的校验和', () => {
+			const data = { nodes: [], clues: [] };
+			const checksum1 = generateChecksum(data);
+			const checksum2 = generateChecksum(data);
+			expect(checksum1).toBe(checksum2);
+		});
+
+		it('应该为不同数据生成不同的校验和', () => {
+			const data1 = { nodes: [{ id: '1' }] };
+			const data2 = { nodes: [{ id: '2' }] };
+			const checksum1 = generateChecksum(data1);
+			const checksum2 = generateChecksum(data2);
+			expect(checksum1).not.toBe(checksum2);
+		});
 	});
 
 	describe('exportToJSON', () => {
-		it('应该导出所有数据为 JSON 文件', async () => {
-			vi.mocked(localDb.getAllCharacters).mockResolvedValue([]);
-			vi.mocked(localDb.getAllNodes).mockResolvedValue([mockNode]);
-			vi.mocked(localDb.getProfile).mockResolvedValue(mockProfile);
-			vi.mocked(localDb.getCluesByNodeId).mockResolvedValue([mockClue]);
-			vi.mocked(localDb.getBranchesByNodeId).mockResolvedValue([mockBranch]);
+		it('应该成功导出数据为 JSON 文件', async () => {
+			const mockData = {
+				nodes: [{ node_id: 'node_1', core_event: '测试事件' }],
+				clues: [],
+				branches: [],
+				profile: null,
+				characters: [],
+			};
+			mockExportAll.mockResolvedValue(mockData);
 
 			await exportToJSON();
 
-			expect(localDb.getAllNodes).toHaveBeenCalled();
-			expect(lastMockAnchor!.click).toHaveBeenCalled();
+			expect(mockExportAll).toHaveBeenCalled();
+			expect(URL.createObjectURL).toHaveBeenCalled();
 		});
 
-		it.skip('应该记录备份时间到 localStorage', async () => {
-			// 由于 document.createElement mock 问题，暂时跳过此测试
-			// 实际功能已验证可正常工作
+		it('应该在文件名中包含日期', async () => {
+			const mockData = { 
+				nodes: [], 
+				clues: [], 
+				branches: [], 
+				profile: null, 
+				characters: [] 
+			};
+			mockExportAll.mockResolvedValue(mockData);
+
+			const mockAnchor = {
+				href: '',
+				download: '',
+				click: vi.fn(),
+			};
+			document.createElement = vi.fn(() => mockAnchor as any);
+
+			await exportToJSON();
+
+			expect(mockAnchor.download).toMatch(/echo-tracks-backup-\d{4}-\d{2}-\d{2}/);
+		});
+
+		it('应该在出错时抛出错误', async () => {
+			mockExportAll.mockRejectedValue(new Error('数据库错误'));
+
+			await expect(exportToJSON()).rejects.toThrow('导出失败');
 		});
 	});
 
 	describe('importFromJSON', () => {
-		const createMockBackup = (): BackupData => ({
-			version: '1.0',
-			exportDate: new Date().toISOString(),
-			data: {
-				nodes: [mockNode],
-				clues: [mockClue],
-				branches: [mockBranch],
-				profile: mockProfile,
-			},
-			checksum: '', // 会在测试中被重新计算
-		});
+		it('应该成功导入有效的备份文件', async () => {
+			const mockData = {
+				version: '1.0',
+				exportDate: new Date().toISOString(),
+				data: {
+					nodes: [{ node_id: 'node_1', core_event: '测试' }],
+					clues: [],
+					branches: [],
+					profile: { name: 'Test' },
+					characters: [],
+				},
+				checksum: '',
+			};
+			mockData.checksum = generateChecksum(mockData.data);
 
-		it('应该成功导入有效的备份文件（合并模式）', async () => {
-			// 创建带正确校验和的备份
-			const backup = createMockBackup();
-			// 计算正确的校验和
-			const dataStr = JSON.stringify(backup.data);
-			let crc = 0 ^ (-1);
-			for (let i = 0; i < dataStr.length; i++) {
-				const char = dataStr.charCodeAt(i);
-				crc = (crc >>> 8) ^ getCrc32Table()[(crc ^ char) & 0xFF];
-			}
-			backup.checksum = ((crc ^ (-1)) >>> 0).toString(16);
-
-			vi.mocked(localDb.getCharacterById).mockResolvedValue(null);
-			vi.mocked(localDb.createCharacter).mockResolvedValue({ id: 'default_character', name: '默认人物', slug: 'default', createdAt: '', updatedAt: '', isDefault: true });
-			vi.mocked(localDb.getNodeById).mockResolvedValue(null);
-			vi.mocked(localDb.insertNode).mockResolvedValue(mockNode);
-			vi.mocked(localDb.insertClue).mockResolvedValue(mockClue);
-			vi.mocked(localDb.insertBranch).mockResolvedValue(mockBranch);
-
-			const file = new File([JSON.stringify(backup)], 'backup.json', {
+			const file = new File([JSON.stringify(mockData)], 'backup.json', {
 				type: 'application/json',
 			});
 
-			const result = await importFromJSON(file, { mode: 'merge' });
+			mockImportAll.mockResolvedValue(undefined);
+
+			const result = await importFromJSON(file);
 
 			expect(result.success).toBe(true);
 			expect(result.imported?.nodes).toBe(1);
+			expect(mockImportAll).toHaveBeenCalled();
 		});
 
-		it('应该拒绝版本不兼容的备份', async () => {
-			const backup = createMockBackup();
-			backup.version = '2.0';
+		it('应该拒绝不兼容的版本', async () => {
+			const mockData = {
+				version: '2.0',
+				exportDate: new Date().toISOString(),
+				data: {},
+				checksum: 'invalid',
+			};
 
-			const file = new File([JSON.stringify(backup)], 'backup.json', {
+			const file = new File([JSON.stringify(mockData)], 'backup.json', {
 				type: 'application/json',
 			});
 
@@ -205,7 +161,25 @@ describe('exportImport', () => {
 			expect(result.message).toContain('不兼容');
 		});
 
-		it('应该拒绝无效的 JSON 文件', async () => {
+		it('应该检测到损坏的备份文件', async () => {
+			const mockData = {
+				version: '1.0',
+				exportDate: new Date().toISOString(),
+				data: { nodes: [] },
+				checksum: 'invalid-checksum',
+			};
+
+			const file = new File([JSON.stringify(mockData)], 'backup.json', {
+				type: 'application/json',
+			});
+
+			const result = await importFromJSON(file);
+
+			expect(result.success).toBe(false);
+			expect(result.message).toContain('损坏');
+		});
+
+		it('应该处理无效的 JSON 文件', async () => {
 			const file = new File(['invalid json'], 'backup.json', {
 				type: 'application/json',
 			});
@@ -213,81 +187,65 @@ describe('exportImport', () => {
 			const result = await importFromJSON(file);
 
 			expect(result.success).toBe(false);
-			expect(result.message).toContain('文件格式错误');
+			expect(result.message).toContain('格式错误');
 		});
-	});
 
-	describe('validateBackupFile', () => {
-		it('应该验证有效的备份文件', async () => {
-			const backup: BackupData = {
+		it('应该支持合并模式导入', async () => {
+			const mockData = {
 				version: '1.0',
 				exportDate: new Date().toISOString(),
 				data: {
-					nodes: [mockNode],
-					clues: [mockClue],
-					branches: [mockBranch],
-					profile: mockProfile,
+					nodes: [{ node_id: 'node_1' }],
+					clues: [],
+					branches: [],
+					profile: null,
+					characters: [],
 				},
 				checksum: '',
 			};
+			mockData.checksum = generateChecksum(mockData.data);
 
-			// 计算正确的校验和
-			const dataStr = JSON.stringify(backup.data);
-			let crc = 0 ^ (-1);
-			for (let i = 0; i < dataStr.length; i++) {
-				const char = dataStr.charCodeAt(i);
-				crc = (crc >>> 8) ^ getCrc32Table()[(crc ^ char) & 0xFF];
-			}
-			backup.checksum = ((crc ^ (-1)) >>> 0).toString(16);
-
-			const file = new File([JSON.stringify(backup)], 'backup.json', {
+			const file = new File([JSON.stringify(mockData)], 'backup.json', {
 				type: 'application/json',
 			});
 
-			const result = await validateBackupFile(file);
+			mockImportAll.mockResolvedValue(undefined);
 
-			expect(result.valid).toBe(true);
-			expect(result.preview?.nodeCount).toBe(1);
-			expect(result.preview?.profileName).toBe('ELARA');
+			await importFromJSON(file, { mode: 'merge' });
+
+			expect(mockImportAll).toHaveBeenCalledWith(
+				mockData.data,
+				{ mode: 'merge' }
+			);
 		});
 
-		it('应该拒绝无效的备份文件', async () => {
-			const file = new File(['invalid'], 'backup.json', {
+		it('应该支持替换模式导入', async () => {
+			const mockData = {
+				version: '1.0',
+				exportDate: new Date().toISOString(),
+				data: {
+					nodes: [],
+					clues: [],
+					branches: [],
+					profile: null,
+					characters: [],
+				},
+				checksum: '',
+			};
+			mockData.checksum = generateChecksum(mockData.data);
+
+			const file = new File([JSON.stringify(mockData)], 'backup.json', {
 				type: 'application/json',
 			});
 
-			const result = await validateBackupFile(file);
+			mockImportAll.mockResolvedValue(undefined);
 
-			expect(result.valid).toBe(false);
-		});
-	});
+			await importFromJSON(file, { mode: 'replace' });
 
-	describe('getStorageStats', () => {
-		it('应该返回正确的存储统计信息', async () => {
-			vi.mocked(localDb.getAllNodes).mockResolvedValue([mockNode]);
-			vi.mocked(localDb.getProfile).mockResolvedValue(mockProfile);
-			vi.mocked(localDb.getCluesByNodeId).mockResolvedValue([mockClue]);
-			vi.mocked(localDb.getBranchesByNodeId).mockResolvedValue([mockBranch]);
-
-			const stats = await getStorageStats();
-
-			expect(stats.nodeCount).toBe(1);
-			expect(stats.clueCount).toBe(1);
-			expect(stats.branchCount).toBe(1);
-			expect(stats.profileName).toBe('ELARA');
+			expect(mockImportAll).toHaveBeenCalledWith(
+				mockData.data,
+				{ mode: 'replace' }
+			);
 		});
 	});
 });
-
-// 辅助函数：获取 CRC32 查找表
-function getCrc32Table(): number[] {
-	const table: number[] = [];
-	for (let i = 0; i < 256; i++) {
-		let c = i;
-		for (let j = 0; j < 8; j++) {
-			c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
-		}
-		table[i] = c;
-	}
-	return table;
-}

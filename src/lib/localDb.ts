@@ -793,6 +793,197 @@ class LocalDatabase {
 		return { nodeIds, clueCount };
 	}
 
+	// ========== 导出/导入方法 ==========
+	/**
+	 * 导出所有数据
+	 */
+	async exportAll(): Promise<{
+		nodes: MemoryNode[];
+		clues: HiddenClue[];
+		branches: IfLineBranch[];
+		profile: CharacterProfileExtended | null;
+		characters: Character[];
+	}> {
+		await this.init();
+		if (this.isServer() || !this.db) {
+			return { nodes: [], clues: [], branches: [], profile: null, characters: [] };
+		}
+
+		const [nodes, clues, branches, characters] = await Promise.all([
+			this.getAllNodes(),
+			this.getAllClues(),
+			this.getAllBranches(),
+			this.getAllCharacters(),
+		]);
+
+		// 获取默认人物的 profile
+		const defaultChar = await this.getDefaultCharacter();
+		const profile = defaultChar ? await this.getProfileByCharacter(defaultChar.id) : null;
+
+		return { nodes, clues, branches, profile, characters };
+	}
+
+	/**
+	 * 导入所有数据
+	 */
+	async importAll(
+		data: {
+			nodes: MemoryNode[];
+			clues: HiddenClue[];
+			branches: IfLineBranch[];
+			profile: CharacterProfileExtended | null;
+			characters: Character[];
+		},
+		options: { mode: 'merge' | 'replace' } = { mode: 'merge' }
+	): Promise<void> {
+		await this.init();
+		if (this.isServer() || !this.db) {
+			throw new Error('无法在服务器端导入数据');
+		}
+
+		if (options.mode === 'replace') {
+			// 清空现有数据
+			await this.clearAll();
+		}
+
+		// 导入人物（去重）
+		if (data.characters?.length > 0) {
+			const existingChars = await this.getAllCharacters();
+			const existingIds = new Set(existingChars.map(c => c.id));
+			
+			for (const char of data.characters) {
+				if (!existingIds.has(char.id)) {
+					await new Promise<void>((resolve, reject) => {
+						const tx = this.db!.transaction('characters', 'readwrite');
+						const store = tx.objectStore('characters');
+						const request = store.put(char);
+						request.onsuccess = () => resolve();
+						request.onerror = () => reject(request.error);
+					});
+				}
+			}
+		}
+
+		// 导入节点（去重）
+		if (data.nodes?.length > 0) {
+			const existingNodes = await this.getAllNodes();
+			const existingIds = new Set(existingNodes.map(n => n.node_id));
+
+			for (const node of data.nodes) {
+				if (!existingIds.has(node.node_id)) {
+					await new Promise<void>((resolve, reject) => {
+						const tx = this.db!.transaction('nodes', 'readwrite');
+						const store = tx.objectStore('nodes');
+						const request = store.put(node);
+						request.onsuccess = () => resolve();
+						request.onerror = () => reject(request.error);
+					});
+				}
+			}
+		}
+
+		// 导入线索（去重）
+		if (data.clues?.length > 0) {
+			const existingClues = await this.getAllClues();
+			const existingIds = new Set(existingClues.map(c => c.clue_id));
+
+			for (const clue of data.clues) {
+				if (!existingIds.has(clue.clue_id)) {
+					await new Promise<void>((resolve, reject) => {
+						const tx = this.db!.transaction('clues', 'readwrite');
+						const store = tx.objectStore('clues');
+						const request = store.put(clue);
+						request.onsuccess = () => resolve();
+						request.onerror = () => reject(request.error);
+					});
+				}
+			}
+		}
+
+		// 导入分支（去重）
+		if (data.branches?.length > 0) {
+			const existingBranches = await this.getAllBranches();
+			const existingIds = new Set(existingBranches.map(b => b.branch_id));
+
+			for (const branch of data.branches) {
+				if (!existingIds.has(branch.branch_id)) {
+					await new Promise<void>((resolve, reject) => {
+						const tx = this.db!.transaction('branches', 'readwrite');
+						const store = tx.objectStore('branches');
+						const request = store.put(branch);
+						request.onsuccess = () => resolve();
+						request.onerror = () => reject(request.error);
+					});
+				}
+			}
+		}
+
+		// 导入人物画像
+		if (data.profile && options.mode === 'replace') {
+			const defaultChar = await this.getDefaultCharacter();
+			if (defaultChar) {
+				await this.updateProfileByCharacter(defaultChar.id, data.profile);
+			}
+		}
+
+		// 更新所有人物统计
+		const characters = await this.getAllCharacters();
+		await Promise.all(characters.map(c => this.updateCharacterStats(c.id)));
+	}
+
+	/**
+	 * 获取所有线索
+	 */
+	async getAllClues(): Promise<HiddenClue[]> {
+		await this.init();
+		if (this.isServer() || !this.db) return [];
+		return new Promise((resolve, reject) => {
+			const tx = this.db!.transaction('clues', 'readonly');
+			const store = tx.objectStore('clues');
+			const request = store.getAll();
+			request.onsuccess = () => resolve(request.result || []);
+			request.onerror = () => reject(request.error);
+		});
+	}
+
+	/**
+	 * 获取所有分支
+	 */
+	async getAllBranches(): Promise<IfLineBranch[]> {
+		await this.init();
+		if (this.isServer() || !this.db) return [];
+		return new Promise((resolve, reject) => {
+			const tx = this.db!.transaction('branches', 'readonly');
+			const store = tx.objectStore('branches');
+			const request = store.getAll();
+			request.onsuccess = () => resolve(request.result || []);
+			request.onerror = () => reject(request.error);
+		});
+	}
+
+	/**
+	 * 清空所有数据
+	 */
+	async clearAll(): Promise<void> {
+		await this.init();
+		if (this.isServer() || !this.db) return;
+		
+		await Promise.all([
+			this.clearAllNodes(),
+			this.clearAllClues(),
+			this.clearAllBranches(),
+		]);
+
+		// 清空人物画像
+		await new Promise<void>((resolve, reject) => {
+			const tx = this.db!.transaction('character_profiles', 'readwrite');
+			const store = tx.objectStore('character_profiles');
+			const request = store.clear();
+			request.onsuccess = () => resolve();
+			request.onerror = () => reject(request.error);
+		});
+	}
+
 	// ========== 辅助方法 ==========
 	private generateSlug(name: string): string {
 		return name

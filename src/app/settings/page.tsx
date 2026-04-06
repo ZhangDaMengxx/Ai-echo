@@ -1,40 +1,73 @@
 // ============================================================
-// SettingsPage: 设置页面
-// 描述: 数据管理、备份恢复、存储统计
+// Settings 页面: 设置与数据管理
+// 支持数据导出/导入、自动备份设置
+//
+// 文件位置: src/app/settings/page.tsx
+// 主要依赖: exportImport, localDb
+//
+// 功能:
+//   - 数据导出为 JSON
+//   - 从 JSON 导入数据
+//   - 存储状态显示
+//   - 冲突处理 (合并/替换)
+//
+// 维护记录:
+//   - 2026-04-06: 创建
 // ============================================================
 
 'use client';
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { motion } from 'framer-motion';
-import { Download, Upload, AlertCircle, CheckCircle, Database, User, Clock } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { exportToJSON, importFromJSON, validateBackupFile, ImportResult } from '@/lib/exportImport';
+import { localDb } from '@/lib/localDb';
 import { GlassButton } from '@/components/GlassButton';
-import { exportToJSON, importFromJSON, validateBackupFile, getStorageStats } from '@/lib/exportImport';
-import Link from 'next/link';
+
+interface StorageStats {
+	nodes: number;
+	clues: number;
+	branches: number;
+	characters: number;
+	lastBackup: string | null;
+}
 
 export default function SettingsPage() {
-	const [stats, setStats] = useState<{
-		nodeCount: number;
-		clueCount: number;
-		branchCount: number;
-		profileName?: string;
-		lastBackup?: string;
-	} | null>(null);
-	const [isExporting, setIsExporting] = useState(false);
-	const [importStatus, setImportStatus] = useState<{
-		type: 'idle' | 'loading' | 'success' | 'error';
-		message: string;
-	}>({ type: 'idle', message: '' });
+	const [stats, setStats] = useState<StorageStats>({
+		nodes: 0,
+		clues: 0,
+		branches: 0,
+		characters: 0,
+		lastBackup: null,
+	});
+	const [isLoading, setIsLoading] = useState(true);
+	const [importResult, setImportResult] = useState<ImportResult | null>(null);
+	const [showConflictModal, setShowConflictModal] = useState(false);
+	const [pendingFile, setPendingFile] = useState<File | null>(null);
 	const [isDragging, setIsDragging] = useState(false);
-	const fileInputRef = useRef<HTMLInputElement>(null);
 
 	// 加载存储统计
 	const loadStats = useCallback(async () => {
 		try {
-			const data = await getStorageStats();
-			setStats(data);
-		} catch (err) {
-			console.error('加载存储统计失败:', err);
+			const [nodes, clues, branches, characters] = await Promise.all([
+				localDb.getAllNodes(),
+				localDb.getAllClues(),
+				localDb.getAllBranches(),
+				localDb.getAllCharacters(),
+			]);
+
+			const lastBackup = localStorage.getItem('lastBackupDate');
+
+			setStats({
+				nodes: nodes.length,
+				clues: clues.length,
+				branches: branches.length,
+				characters: characters.length,
+				lastBackup: lastBackup,
+			});
+		} catch (error) {
+			console.error('加载统计失败:', error);
+		} finally {
+			setIsLoading(false);
 		}
 	}, []);
 
@@ -44,51 +77,58 @@ export default function SettingsPage() {
 
 	// 处理导出
 	const handleExport = async () => {
-		setIsExporting(true);
 		try {
 			await exportToJSON();
-			// 记录备份时间
-			localStorage.setItem('echo-tracks-last-backup', new Date().toISOString());
-			await loadStats();
-		} catch (err) {
-			console.error('导出失败:', err);
-		} finally {
-			setIsExporting(false);
+			const now = new Date().toISOString();
+			localStorage.setItem('lastBackupDate', now);
+			setStats(prev => ({ ...prev, lastBackup: now }));
+		} catch (error) {
+			alert(`导出失败: ${error instanceof Error ? error.message : '未知错误'}`);
 		}
 	};
 
 	// 处理文件选择
 	const handleFileSelect = async (file: File) => {
-		setImportStatus({ type: 'loading', message: '正在验证文件...' });
-
-		// 先验证文件
 		const validation = await validateBackupFile(file);
+
 		if (!validation.valid) {
-			setImportStatus({ type: 'error', message: validation.message });
+			setImportResult({
+				success: false,
+				message: validation.message,
+			});
 			return;
 		}
 
-		setImportStatus({ type: 'loading', message: '正在导入数据...' });
-
-		// 执行导入（合并模式）
-		const result = await importFromJSON(file, { mode: 'merge' });
-
-		if (result.success) {
-			setImportStatus({ type: 'success', message: result.message });
-			await loadStats();
+		// 检查是否有现有数据
+		if (stats.nodes > 0 || stats.clues > 0 || stats.branches > 0) {
+			setPendingFile(file);
+			setShowConflictModal(true);
 		} else {
-			setImportStatus({ type: 'error', message: result.message });
+			// 直接导入
+			await performImport(file, 'replace');
 		}
 	};
 
-	// 处理输入框文件选择
-	const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-		const file = e.target.files?.[0];
-		if (file) {
-			handleFileSelect(file);
+	// 执行导入
+	const performImport = async (file: File, mode: 'merge' | 'replace') => {
+		setIsLoading(true);
+		try {
+			const result = await importFromJSON(file, { mode });
+			setImportResult(result);
+
+			if (result.success) {
+				await loadStats();
+			}
+		} catch (error) {
+			setImportResult({
+				success: false,
+				message: `导入失败: ${error instanceof Error ? error.message : '未知错误'}`,
+			});
+		} finally {
+			setIsLoading(false);
+			setShowConflictModal(false);
+			setPendingFile(null);
 		}
-		// 重置输入框，允许重复选择同一文件
-		e.target.value = '';
 	};
 
 	// 拖拽处理
@@ -106,126 +146,104 @@ export default function SettingsPage() {
 		e.preventDefault();
 		setIsDragging(false);
 
-		const file = e.dataTransfer.files[0];
-		if (file && file.name.endsWith('.json')) {
-			handleFileSelect(file);
-		} else {
-			setImportStatus({ type: 'error', message: '请选择 .json 格式的备份文件' });
+		const files = e.dataTransfer.files;
+		if (files.length > 0 && files[0].name.endsWith('.json')) {
+			handleFileSelect(files[0]);
 		}
 	};
 
 	// 格式化日期显示
-	const formatDate = (isoString?: string) => {
-		if (!isoString) return '从未';
-		const date = new Date(isoString);
+	const formatDate = (dateStr: string | null) => {
+		if (!dateStr) return '从未备份';
+		const date = new Date(dateStr);
 		const now = new Date();
 		const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
 
 		if (diffDays === 0) return '今天';
 		if (diffDays === 1) return '昨天';
 		if (diffDays < 7) return `${diffDays} 天前`;
-		if (diffDays < 30) return `${Math.floor(diffDays / 7)} 周前`;
-		return `${Math.floor(diffDays / 30)} 个月前`;
+		return date.toLocaleDateString('zh-CN');
 	};
 
 	return (
-		<div className="min-h-screen bg-[#0a0a0f] p-6">
-			{/* 返回导航 */}
-			<nav className="mb-8">
-				<Link href="/">
-					<GlassButton>← 返回</GlassButton>
-				</Link>
-			</nav>
-
-			<div className="max-w-2xl mx-auto space-y-6">
-				{/* 页面标题 */}
+		<div className="min-h-screen bg-[#0a0a0f] text-white p-8">
+			<div className="max-w-4xl mx-auto space-y-8">
+				{/* 标题 */}
 				<motion.div
 					initial={{ opacity: 0, y: -20 }}
 					animate={{ opacity: 1, y: 0 }}
-					className="text-center mb-8"
+					className="text-center"
 				>
-					<h1 className="text-white text-3xl font-extralight tracking-[0.3em] mb-2">设置</h1>
-					<p className="text-white/40 text-sm">数据管理与备份恢复</p>
+					<h1 className="text-3xl font-light tracking-wider mb-2">设置</h1>
+					<p className="text-white/50">数据管理与系统配置</p>
+				</motion.div>
+
+				{/* 存储状态卡片 */}
+				<motion.div
+					initial={{ opacity: 0, y: 20 }}
+					animate={{ opacity: 1, y: 0 }}
+					transition={{ delay: 0.1 }}
+					className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6"
+				>
+					<h2 className="text-xl font-light mb-6 flex items-center gap-2">
+						<span>💾</span>
+						<span>本地存储状态</span>
+					</h2>
+
+					{isLoading ? (
+						<div className="flex justify-center py-8">
+							<div className="w-8 h-8 border-2 border-white/20 border-t-white/80 rounded-full animate-spin" />
+						</div>
+					) : (
+						<div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+							<StatCard label="记忆节点" value={stats.nodes} />
+							<StatCard label="隐藏线索" value={stats.clues} />
+							<StatCard label="IF 线分支" value={stats.branches} />
+							<StatCard label="人物" value={stats.characters} />
+						</div>
+					)}
+
+					<div className="flex items-center justify-between pt-4 border-t border-white/10">
+						<span className="text-white/50">
+							上次备份: {formatDate(stats.lastBackup)}
+						</span>
+						{stats.lastBackup && new Date().getTime() - new Date(stats.lastBackup).getTime() > 7 * 24 * 60 * 60 * 1000 && (
+							<span className="text-yellow-400 text-sm">⚠️ 建议备份</span>
+						)}
+					</div>
 				</motion.div>
 
 				{/* 数据管理卡片 */}
 				<motion.div
 					initial={{ opacity: 0, y: 20 }}
 					animate={{ opacity: 1, y: 0 }}
-					transition={{ delay: 0.1 }}
-					className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl p-6"
+					transition={{ delay: 0.2 }}
+					className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6"
 				>
-					<div className="flex items-center gap-3 mb-6">
-						<Database className="w-5 h-5 text-white/60" />
-						<h2 className="text-white text-lg font-light tracking-wider">数据管理</h2>
-					</div>
+					<h2 className="text-xl font-light mb-6 flex items-center gap-2">
+						<span>📦</span>
+						<span>数据管理</span>
+					</h2>
 
-					{/* 存储统计 */}
-					{stats && (
-						<div className="grid grid-cols-2 gap-4 mb-6">
-							<div className="rounded-2xl bg-white/5 p-4">
-								<div className="flex items-center gap-2 text-white/40 text-xs mb-1">
-									<Database className="w-3 h-3" />
-									<span>记忆节点</span>
-								</div>
-								<p className="text-white text-2xl font-light">{stats.nodeCount}</p>
-							</div>
-							<div className="rounded-2xl bg-white/5 p-4">
-								<div className="flex items-center gap-2 text-white/40 text-xs mb-1">
-									<User className="w-3 h-3" />
-									<span>人物名称</span>
-								</div>
-								<p className="text-white text-2xl font-light">{stats.profileName || '未设置'}</p>
-							</div>
-							<div className="rounded-2xl bg-white/5 p-4">
-								<div className="flex items-center gap-2 text-white/40 text-xs mb-1">
-									<AlertCircle className="w-3 h-3" />
-									<span>隐藏线索</span>
-								</div>
-								<p className="text-white text-2xl font-light">{stats.clueCount}</p>
-							</div>
-							<div className="rounded-2xl bg-white/5 p-4">
-								<div className="flex items-center gap-2 text-white/40 text-xs mb-1">
-									<Clock className="w-3 h-3" />
-									<span>上次备份</span>
-								</div>
-								<p className={`text-2xl font-light ${stats.lastBackup ? 'text-white' : 'text-yellow-400/80'}`}>
-									{formatDate(stats.lastBackup)}
-								</p>
-							</div>
-						</div>
-					)}
+					<div className="flex flex-wrap gap-4 mb-6">
+						<GlassButton onClick={handleExport} disabled={isLoading}>
+							📥 导出备份
+						</GlassButton>
 
-					{/* 操作按钮 */}
-					<div className="flex gap-4 mb-6">
-						<motion.button
-							onClick={handleExport}
-							disabled={isExporting}
-							whileHover={{ scale: 1.02 }}
-							whileTap={{ scale: 0.98 }}
-							className="flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-white/10 text-white hover:bg-white/20 transition-colors disabled:opacity-50"
-						>
-							<Download className="w-4 h-4" />
-							{isExporting ? '导出中...' : '导出备份'}
-						</motion.button>
-
-						<motion.button
-							onClick={() => fileInputRef.current?.click()}
-							whileHover={{ scale: 1.02 }}
-							whileTap={{ scale: 0.98 }}
-							className="flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-white/10 text-white hover:bg-white/20 transition-colors"
-						>
-							<Upload className="w-4 h-4" />
-							导入备份
-						</motion.button>
-
-						<input
-							ref={fileInputRef}
-							type="file"
-							accept=".json"
-							onChange={handleInputChange}
-							className="hidden"
-						/>
+						<label className="cursor-pointer">
+							<input
+								type="file"
+								accept=".json"
+								className="hidden"
+								onChange={(e) => {
+									const file = e.target.files?.[0];
+									if (file) handleFileSelect(file);
+								}}
+							/>
+							<GlassButton disabled={isLoading}>
+								📤 导入备份
+							</GlassButton>
+						</label>
 					</div>
 
 					{/* 拖拽区域 */}
@@ -233,60 +251,136 @@ export default function SettingsPage() {
 						onDragOver={handleDragOver}
 						onDragLeave={handleDragLeave}
 						onDrop={handleDrop}
-						className={`rounded-2xl border-2 border-dashed p-8 text-center transition-colors ${
-							isDragging
-								? 'border-white/40 bg-white/10'
+						className={`
+							border-2 border-dashed rounded-xl p-8 text-center transition-all
+							${isDragging 
+								? 'border-white/40 bg-white/10' 
 								: 'border-white/10 bg-white/5'
-						}`}
+							}
+						`}
 					>
-						<p className="text-white/40 text-sm">
-							拖拽备份文件到此处导入
+						<p className="text-white/50">
+							拖拽 JSON 备份文件到此处导入
 						</p>
 					</div>
 
-					{/* 导入状态提示 */}
-					{importStatus.type !== 'idle' && (
-						<motion.div
-							initial={{ opacity: 0, y: 10 }}
-							animate={{ opacity: 1, y: 0 }}
-							className={`mt-4 flex items-center gap-2 p-3 rounded-xl ${
-								importStatus.type === 'success'
-									? 'bg-green-500/20 text-green-300'
-									: importStatus.type === 'error'
-										? 'bg-red-500/20 text-red-300'
-										: 'bg-white/10 text-white/60'
-							}`}
-						>
-							{importStatus.type === 'success' && <CheckCircle className="w-4 h-4" />}
-							{importStatus.type === 'error' && <AlertCircle className="w-4 h-4" />}
-							{importStatus.type === 'loading' && (
-								<motion.div
-									animate={{ rotate: 360 }}
-									transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-									className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full"
-								/>
-							)}
-							<span className="text-sm">{importStatus.message}</span>
-						</motion.div>
-					)}
+					{/* 导入结果提示 */}
+					<AnimatePresence>
+						{importResult && (
+							<motion.div
+								initial={{ opacity: 0, height: 0 }}
+								animate={{ opacity: 1, height: 'auto' }}
+								exit={{ opacity: 0, height: 0 }}
+								className={`mt-4 p-4 rounded-lg ${
+									importResult.success 
+										? 'bg-green-500/20 border border-green-500/30' 
+										: 'bg-red-500/20 border border-red-500/30'
+								}`}
+							>
+								<p className={importResult.success ? 'text-green-300' : 'text-red-300'}>
+									{importResult.success ? '✅' : '❌'} {importResult.message}
+								</p>
+								{importResult.imported && (
+									<p className="text-white/70 text-sm mt-1">
+										导入: {importResult.imported.nodes} 个节点, {importResult.imported.clues} 条线索, {importResult.imported.branches} 个分支
+									</p>
+								)}
+								<button
+									onClick={() => setImportResult(null)}
+									className="text-white/50 text-sm mt-2 hover:text-white/80"
+								>
+									关闭
+								</button>
+							</motion.div>
+						)}
+					</AnimatePresence>
 				</motion.div>
 
-				{/* 说明卡片 */}
+				{/* 关于卡片 */}
 				<motion.div
 					initial={{ opacity: 0, y: 20 }}
 					animate={{ opacity: 1, y: 0 }}
-					transition={{ delay: 0.2 }}
-					className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl p-6"
+					transition={{ delay: 0.3 }}
+					className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6"
 				>
-					<h3 className="text-white/60 text-sm font-light mb-4">关于数据备份</h3>
-					<ul className="space-y-2 text-white/40 text-xs leading-relaxed">
-						<li>• 所有数据仅存储在浏览器本地（IndexedDB），不会上传到任何服务器</li>
-						<li>• 导出备份可将数据保存为 JSON 文件，用于跨设备迁移</li>
-						<li>• 建议定期导出备份，防止浏览器数据清理导致丢失</li>
-						<li>• 导入备份时，已存在的节点会自动跳过（合并模式）</li>
-					</ul>
+					<h2 className="text-xl font-light mb-4 flex items-center gap-2">
+						<span>ℹ️</span>
+						<span>关于</span>
+					</h2>
+					<p className="text-white/50 text-sm leading-relaxed">
+						回音轨迹 (Echo Tracks) 使用浏览器本地存储 (IndexedDB) 保存您的数据。
+						数据完全存储在您的设备上，不会上传到任何服务器。
+						建议定期导出备份，以防浏览器数据丢失。
+					</p>
 				</motion.div>
 			</div>
+
+			{/* 冲突处理弹窗 */}
+			<AnimatePresence>
+				{showConflictModal && pendingFile && (
+					<motion.div
+						initial={{ opacity: 0 }}
+						animate={{ opacity: 1 }}
+						exit={{ opacity: 0 }}
+						className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+					>
+						<motion.div
+							initial={{ scale: 0.9, opacity: 0 }}
+							animate={{ scale: 1, opacity: 1 }}
+							exit={{ scale: 0.9, opacity: 0 }}
+							className="bg-[#0a0a0f] border border-white/20 rounded-2xl p-6 max-w-md w-full"
+						>
+							<h3 className="text-xl font-light mb-4">检测到现有数据</h3>
+							<p className="text-white/60 mb-6">
+								您已有 {stats.nodes} 个节点、{stats.clues} 条线索。
+								请选择导入方式：
+							</p>
+
+							<div className="space-y-3">
+								<button
+									onClick={() => performImport(pendingFile, 'merge')}
+									className="w-full p-4 bg-white/10 hover:bg-white/15 border border-white/20 rounded-xl text-left transition-all"
+								>
+									<div className="font-medium">🔄 合并</div>
+									<div className="text-sm text-white/50 mt-1">
+										保留现有数据，添加新数据
+									</div>
+								</button>
+
+								<button
+									onClick={() => performImport(pendingFile, 'replace')}
+									className="w-full p-4 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 rounded-xl text-left transition-all"
+								>
+									<div className="font-medium text-red-300">🗑️ 替换</div>
+									<div className="text-sm text-white/50 mt-1">
+										删除现有数据，使用备份数据
+									</div>
+								</button>
+
+								<button
+									onClick={() => {
+										setShowConflictModal(false);
+										setPendingFile(null);
+									}}
+									className="w-full p-3 text-white/50 hover:text-white/80 transition-all"
+								>
+									取消
+								</button>
+							</div>
+						</motion.div>
+					</motion.div>
+				)}
+			</AnimatePresence>
+		</div>
+	);
+}
+
+// 统计卡片组件
+function StatCard({ label, value }: { label: string; value: number }) {
+	return (
+		<div className="bg-white/5 rounded-xl p-4 text-center">
+			<div className="text-2xl font-light text-white/90">{value}</div>
+			<div className="text-sm text-white/40 mt-1">{label}</div>
 		</div>
 	);
 }
