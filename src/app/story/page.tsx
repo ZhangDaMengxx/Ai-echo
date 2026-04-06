@@ -167,7 +167,7 @@ export default function StoryPage() {
 				nodeData: node,
 				isFirstRound: true,
 				characterId: character?.id,
-				enableRAG: true,
+				enableRAG: false,  // 开场白不检索，让用户先发言
 			});
 
 			setAiMessages([
@@ -187,7 +187,7 @@ export default function StoryPage() {
 						nodeData: cachedNode,
 						isFirstRound: true,
 						characterId: character?.id,
-						enableRAG: true,
+						enableRAG: false,  // 开场白不检索
 					});
 					setAiMessages([
 						{ id: '1', role: 'system', content: `*${cachedNode.npc_state?.current_emotion || '平静'}*` },

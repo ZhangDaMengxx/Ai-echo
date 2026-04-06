@@ -62,7 +62,7 @@ export async function retrieveRelevantMemories(
 	query: string,
 	characterId: string,
 	topK = 3,
-	threshold = 0.6
+	threshold = 0.25  // 降低阈值，避免过滤掉所有结果
 ): Promise<RetrievedMemory[]> {
 	try {
 		console.log('[RAG] 开始检索:', { query: query.slice(0, 30), characterId });
