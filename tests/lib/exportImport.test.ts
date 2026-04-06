@@ -27,6 +27,11 @@ vi.mock('@/lib/localDb', () => ({
 		clearAllNodes: vi.fn(),
 		clearAllClues: vi.fn(),
 		clearAllBranches: vi.fn(),
+		// v1.1 新增
+		getAllCharacters: vi.fn(),
+		getCharacterById: vi.fn(),
+		createCharacter: vi.fn(),
+		updateProfileByCharacter: vi.fn(),
 	},
 }));
 
@@ -126,6 +131,7 @@ describe('exportImport', () => {
 
 	describe('exportToJSON', () => {
 		it('应该导出所有数据为 JSON 文件', async () => {
+			vi.mocked(localDb.getAllCharacters).mockResolvedValue([]);
 			vi.mocked(localDb.getAllNodes).mockResolvedValue([mockNode]);
 			vi.mocked(localDb.getProfile).mockResolvedValue(mockProfile);
 			vi.mocked(localDb.getCluesByNodeId).mockResolvedValue([mockClue]);
@@ -134,7 +140,6 @@ describe('exportImport', () => {
 			await exportToJSON();
 
 			expect(localDb.getAllNodes).toHaveBeenCalled();
-			expect(localDb.getProfile).toHaveBeenCalled();
 			expect(lastMockAnchor!.click).toHaveBeenCalled();
 		});
 
@@ -169,6 +174,8 @@ describe('exportImport', () => {
 			}
 			backup.checksum = ((crc ^ (-1)) >>> 0).toString(16);
 
+			vi.mocked(localDb.getCharacterById).mockResolvedValue(null);
+			vi.mocked(localDb.createCharacter).mockResolvedValue({ id: 'default_character', name: '默认人物', slug: 'default', createdAt: '', updatedAt: '', isDefault: true });
 			vi.mocked(localDb.getNodeById).mockResolvedValue(null);
 			vi.mocked(localDb.insertNode).mockResolvedValue(mockNode);
 			vi.mocked(localDb.insertClue).mockResolvedValue(mockClue);
