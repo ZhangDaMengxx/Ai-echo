@@ -67,7 +67,6 @@ interface ParticleNodeTimelineProps {
 function ParticleSphere({
 	position,
 	title,
-	description: _description,
 	scale = 1,
 	isCenter = false,
 	distance = 0,
@@ -77,7 +76,6 @@ function ParticleSphere({
 }: {
 	position: [number, number, number];
 	title: string;
-	description?: string;
 	scale?: number;
 	isCenter?: boolean;
 	distance?: number;
@@ -429,10 +427,10 @@ function TimelineScene({
 
 	// 包装点击处理，判断是否拖拽
 	const handleNodeClickWrapper = useCallback(
-		(node: TimelineNode, index: number) => {
+		(node: TimelineNode, _index: number) => {
 			// 如果是拖拽操作，不触发点击
 			// 触发点击事件
-			onNodeClick(node, index);
+			onNodeClick(node);
 		},
 		[onNodeClick]
 	);
@@ -451,7 +449,6 @@ function TimelineScene({
 							key={node.id}
 							position={[xPosition, 0, 0]}
 							title={node.title || node.core_event.slice(0, 10)}
-							description={node.description || node.core_event}
 							scale={scale}
 							isCenter={isCenter}
 							distance={distance}
@@ -539,7 +536,7 @@ export function ParticleNodeTimeline({
 	const [centerIndex, setCenterIndex] = useState(0);
 
 	const handleNodeClick = useCallback(
-		(node: TimelineNode, _index: number) => {
+		(node: TimelineNode) => {
 			onNodeClick?.(node);
 		},
 		[onNodeClick]
