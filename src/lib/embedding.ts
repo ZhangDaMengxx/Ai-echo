@@ -3,8 +3,8 @@
 // 描述: 使用本地 API 生成文本嵌入向量（解决 CORS）
 // ============================================================
 
-// 嵌入向量维度
-export const EMBEDDING_DIM = 768;
+// 嵌入向量维度 (阿里云 text-embedding-v2 实际返回 1536 维)
+export const EMBEDDING_DIM = 1536;
 
 // 缓存（避免重复请求相同文本）
 const embeddingCache = new Map<string, number[]>();

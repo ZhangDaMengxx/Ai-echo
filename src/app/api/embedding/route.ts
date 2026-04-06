@@ -86,10 +86,12 @@ export async function POST(request: NextRequest) {
 			);
 		}
 
-		if (vec.length !== 768) {
-			console.error('[API Embedding] Wrong dimension:', vec.length);
+		// text-embedding-v2 返回 1536 维
+		const EXPECTED_DIM = 1536;
+		if (vec.length !== EXPECTED_DIM) {
+			console.error('[API Embedding] Wrong dimension:', vec.length, 'expected:', EXPECTED_DIM);
 			return NextResponse.json(
-				{ error: '向量维度错误', length: vec.length },
+				{ error: '向量维度错误', length: vec.length, expected: EXPECTED_DIM },
 				{ status: 502 }
 			);
 		}
