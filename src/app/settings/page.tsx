@@ -13,6 +13,7 @@
 //
 // 维护记录:
 //   - 2026-04-06: 创建
+//   - 2026-04-06: 添加自动备份功能
 // ============================================================
 
 'use client';
@@ -22,6 +23,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { exportToJSON, importFromJSON, validateBackupFile, ImportResult } from '@/lib/exportImport';
 import { localDb } from '@/lib/localDb';
 import { GlassButton } from '@/components/GlassButton';
+import { useAutoBackup, getLastAutoBackupTime } from '@/hooks/useAutoBackup';
 
 interface StorageStats {
 	nodes: number;
@@ -44,6 +46,21 @@ export default function SettingsPage() {
 	const [showConflictModal, setShowConflictModal] = useState(false);
 	const [pendingFile, setPendingFile] = useState<File | null>(null);
 	const [isDragging, setIsDragging] = useState(false);
+	const [autoBackupEnabled, setAutoBackupEnabled] = useState(false);
+	const [autoBackupInterval, setAutoBackupInterval] = useState(7);
+	const [lastAutoBackup, setLastAutoBackup] = useState<number | null>(null);
+
+	// 启用自动备份 Hook
+	useAutoBackup({ enabled: autoBackupEnabled, intervalDays: autoBackupInterval });
+
+	// 加载自动备份设置
+	useEffect(() => {
+		const enabled = localStorage.getItem('autoBackupEnabled') === 'true';
+		const interval = Number(localStorage.getItem('autoBackupInterval') || '7');
+		setAutoBackupEnabled(enabled);
+		setAutoBackupInterval(interval);
+		setLastAutoBackup(getLastAutoBackupTime());
+	}, []);
 
 	// 加载存储统计
 	const loadStats = useCallback(async () => {
@@ -163,6 +180,24 @@ export default function SettingsPage() {
 		if (diffDays === 1) return '昨天';
 		if (diffDays < 7) return `${diffDays} 天前`;
 		return date.toLocaleDateString('zh-CN');
+	};
+
+	// 格式化时间戳
+	const formatTimestamp = (timestamp: number | null) => {
+		if (!timestamp) return '从未';
+		return formatDate(new Date(timestamp).toISOString());
+	};
+
+	// 切换自动备份
+	const toggleAutoBackup = (enabled: boolean) => {
+		setAutoBackupEnabled(enabled);
+		localStorage.setItem('autoBackupEnabled', String(enabled));
+	};
+
+	// 修改自动备份间隔
+	const changeAutoBackupInterval = (days: number) => {
+		setAutoBackupInterval(days);
+		localStorage.setItem('autoBackupInterval', String(days));
 	};
 
 	return (
@@ -296,11 +331,84 @@ export default function SettingsPage() {
 					</AnimatePresence>
 				</motion.div>
 
-				{/* 关于卡片 */}
+				{/* 自动备份设置卡片 */}
 				<motion.div
 					initial={{ opacity: 0, y: 20 }}
 					animate={{ opacity: 1, y: 0 }}
 					transition={{ delay: 0.3 }}
+					className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6"
+				>
+					<h2 className="text-xl font-light mb-6 flex items-center gap-2">
+						<span>🔄</span>
+						<span>自动备份</span>
+						<span className="text-xs px-2 py-0.5 bg-yellow-500/20 text-yellow-400 rounded-full">实验性</span>
+					</h2>
+
+					<div className="space-y-6">
+						{/* 开关 */}
+						<div className="flex items-center justify-between">
+							<div>
+								<div className="font-medium">启用自动备份</div>
+								<div className="text-sm text-white/50">
+									上次自动备份: {formatTimestamp(lastAutoBackup)}
+								</div>
+							</div>
+							<button
+								onClick={() => toggleAutoBackup(!autoBackupEnabled)}
+								className={`
+									relative w-14 h-8 rounded-full transition-colors
+									${autoBackupEnabled ? 'bg-green-500/50' : 'bg-white/20'}
+								`}
+							>
+								<span
+									className={`
+										absolute top-1 w-6 h-6 bg-white rounded-full transition-transform
+										${autoBackupEnabled ? 'translate-x-7' : 'translate-x-1'}
+									`}
+								/>
+							</button>
+						</div>
+
+						{/* 间隔设置 */}
+						{autoBackupEnabled && (
+							<motion.div
+								initial={{ opacity: 0, height: 0 }}
+								animate={{ opacity: 1, height: 'auto' }}
+								exit={{ opacity: 0, height: 0 }}
+								className="pt-4 border-t border-white/10"
+							>
+								<div className="text-sm text-white/70 mb-3">备份间隔</div>
+								<div className="flex flex-wrap gap-2">
+									{[3, 7, 14, 30].map((days) => (
+										<button
+											key={days}
+											onClick={() => changeAutoBackupInterval(days)}
+											className={`
+												px-4 py-2 rounded-lg text-sm transition-all
+												${autoBackupInterval === days
+													? 'bg-white/20 text-white'
+													: 'bg-white/5 text-white/50 hover:bg-white/10'
+												}
+											`}
+										>
+											{days} 天
+										</button>
+									))}
+								</div>
+								<p className="text-xs text-white/40 mt-3">
+									自动备份将在浏览器中生成 JSON 文件并触发下载。
+									请确保允许浏览器自动下载文件。
+								</p>
+							</motion.div>
+						)}
+					</div>
+				</motion.div>
+
+				{/* 关于卡片 */}
+				<motion.div
+					initial={{ opacity: 0, y: 20 }}
+					animate={{ opacity: 1, y: 0 }}
+					transition={{ delay: 0.4 }}
 					className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6"
 				>
 					<h2 className="text-xl font-light mb-4 flex items-center gap-2">
@@ -310,7 +418,7 @@ export default function SettingsPage() {
 					<p className="text-white/50 text-sm leading-relaxed">
 						回音轨迹 (Echo Tracks) 使用浏览器本地存储 (IndexedDB) 保存您的数据。
 						数据完全存储在您的设备上，不会上传到任何服务器。
-						建议定期导出备份，以防浏览器数据丢失。
+						建议定期导出备份，或使用自动备份功能。
 					</p>
 				</motion.div>
 			</div>
