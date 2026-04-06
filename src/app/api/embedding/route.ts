@@ -29,62 +29,75 @@ export async function POST(request: NextRequest) {
 			);
 		}
 
-		// 批量限制
-		const BATCH_SIZE = 25;
-		const results: number[][] = [];
+		// 只处理第一个文本（简化调试）
+		const text = texts[0].slice(0, 2000);
+		console.log('[API Embedding] Calling Qwen API with text:', text.slice(0, 50));
+		
+		const response = await fetch(EMBEDDING_URL, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				'Authorization': `Bearer ${QWEN_API_KEY}`,
+			},
+			body: JSON.stringify({
+				model: 'text-embedding-v2',
+				input: { texts: [text] },
+			}),
+		});
 
-		for (let i = 0; i < texts.length; i += BATCH_SIZE) {
-			const batch = texts.slice(i, i + BATCH_SIZE);
-			const batchTexts = batch.map((t: string) => t.slice(0, 2000));
+		console.log('[API Embedding] Qwen response status:', response.status);
 
-			console.log('[API Embedding] Calling Qwen API, batch size:', batchTexts.length);
-			
-			const response = await fetch(EMBEDDING_URL, {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-					'Authorization': `Bearer ${QWEN_API_KEY}`,
-				},
-				body: JSON.stringify({
-					model: 'text-embedding-v2',
-					input: { texts: batchTexts },
-				}),
-			});
-
-			console.log('[API Embedding] Qwen response status:', response.status);
-
-			if (!response.ok) {
-				const errorText = await response.text();
-				console.error('[API Embedding] Batch failed:', response.status, errorText);
-				results.push(...batch.map(() => new Array(768).fill(0)));
-				continue;
-			}
-
-			const data = await response.json();
-			console.log('[API Embedding] Qwen response data keys:', Object.keys(data));
-			console.log('[API Embedding] Output keys:', data.output ? Object.keys(data.output) : 'no output');
-			
-			const embeddings = data.output?.embeddings || [];
-			console.log('[API Embedding] Embeddings count:', embeddings.length);
-			if (embeddings.length > 0) {
-				console.log('[API Embedding] First embedding type:', typeof embeddings[0], Array.isArray(embeddings[0]));
-				if (embeddings[0].embedding) {
-					console.log('[API Embedding] First embedding has .embedding property');
-				}
-			}
-
-			results.push(...embeddings.map((e: { embedding: number[] } | number[]) => {
-				// 阿里云返回格式: { embedding: [...] }
-				const vec = Array.isArray(e) ? e : e.embedding;
-				if (vec?.length === 768) {
-					return vec;
-				}
-				return new Array(768).fill(0);
-			}));
+		if (!response.ok) {
+			const errorText = await response.text();
+			console.error('[API Embedding] API failed:', response.status, errorText);
+			return NextResponse.json(
+				{ error: '阿里云API错误', status: response.status, details: errorText },
+				{ status: 502 }
+			);
 		}
 
-		console.log('[API Embedding] Returning', results.length, 'embeddings');
-		return NextResponse.json({ embeddings: results });
+		const data = await response.json();
+		console.log('[API Embedding] Qwen full response:', JSON.stringify(data, null, 2).slice(0, 500));
+		
+		// 详细解析返回结构
+		const embeddings = data.output?.embeddings;
+		if (!embeddings || !Array.isArray(embeddings) || embeddings.length === 0) {
+			console.error('[API Embedding] No embeddings in response, data:', data);
+			return NextResponse.json(
+				{ error: '阿里云返回格式错误', data },
+				{ status: 502 }
+			);
+		}
+
+		const firstEmbedding = embeddings[0];
+		console.log('[API Embedding] First embedding type:', typeof firstEmbedding, Array.isArray(firstEmbedding), firstEmbedding?.embedding ? 'has .embedding' : 'no .embedding');
+		
+		// 提取向量
+		let vec: number[];
+		if (Array.isArray(firstEmbedding)) {
+			vec = firstEmbedding;
+		} else if (firstEmbedding && Array.isArray(firstEmbedding.embedding)) {
+			vec = firstEmbedding.embedding;
+		} else {
+			console.error('[API Embedding] Unknown embedding format:', firstEmbedding);
+			return NextResponse.json(
+				{ error: '未知向量格式', embedding: firstEmbedding },
+				{ status: 502 }
+			);
+		}
+
+		if (vec.length !== 768) {
+			console.error('[API Embedding] Wrong dimension:', vec.length);
+			return NextResponse.json(
+				{ error: '向量维度错误', length: vec.length },
+				{ status: 502 }
+			);
+		}
+
+		const nonZeroCount = vec.filter((v: number) => v !== 0).length;
+		console.log('[API Embedding] Success! Non-zero count:', nonZeroCount, 'First 5:', vec.slice(0, 5));
+
+		return NextResponse.json({ embeddings: [vec] });
 	} catch (error) {
 		console.error('[API Embedding] Error:', error);
 		return NextResponse.json(
