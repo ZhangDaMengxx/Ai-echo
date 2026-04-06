@@ -21,6 +21,7 @@ export interface MemoryNode {
 interface StoryCarouselProps {
 	nodes: MemoryNode[];
 	onNodeClick: (node: MemoryNode) => void;
+	onNodePreview?: (node: MemoryNode) => void; // 点击中心节点预览
 	subjectName?: string;
 }
 
