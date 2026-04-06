@@ -58,6 +58,7 @@ export function withLazyLoad<P extends object>(
 				<LazyComponent {...props} />
 			</Suspense>
 		);
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	} as ComponentType<P>;
 }
 
