@@ -430,7 +430,7 @@ function TimelineScene({
 		(node: TimelineNode, _index: number) => {
 			// 如果是拖拽操作，不触发点击
 			// 触发点击事件
-			onNodeClick(node);
+			onNodeClick(node, _index);
 		},
 		[onNodeClick]
 	);
