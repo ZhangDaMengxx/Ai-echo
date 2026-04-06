@@ -18,6 +18,7 @@ const createMockClient = () => {
       on: () => ({ subscribe: () => ({}) }),
     }),
     removeChannel: () => {},
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } as any
 }
 
