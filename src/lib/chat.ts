@@ -4,9 +4,11 @@
 // 更新: 
 //   - fetchNode 使用 IndexedDB 本地存储
 //   - sendChatMessage 支持传入人物画像
+//   - 支持 RAG 记忆检索增强
 // ============================================================
 
 import { localDb } from './localDb';
+import { getRAGContext, RAGContext } from './rag';
 
 export interface ChatMessage {
 	id: string
@@ -69,12 +71,22 @@ export interface ChatParams {
 	isFirstRound?: boolean
 	/** 人物ID，用于获取画像 */
 	characterId?: string
+	/** 是否启用RAG记忆检索 */
+	enableRAG?: boolean
 }
 
-export async function sendChatMessage(params: ChatParams): Promise<{
+export interface ChatResult {
 	reply: string
 	unlockedClues: string[]
-}> {
+	/** RAG检索到的记忆（调试用） */
+	retrievedMemories?: Array<{
+		node_id: string
+		core_event: string
+		similarity: number
+	}>
+}
+
+export async function sendChatMessage(params: ChatParams): Promise<ChatResult> {
 	// 如果传入了人物ID，从数据库获取画像
 	let userProfile: { base_archetype: Record<string, unknown> } = { 
 		base_archetype: { style: '温和平衡', logic: '理性感性并重' } 
@@ -97,6 +109,17 @@ export async function sendChatMessage(params: ChatParams): Promise<{
 			console.warn('[Chat] 获取人物画像失败，使用默认值:', err)
 		}
 	}
+	
+	// RAG: 检索相关记忆
+	let ragContext: RAGContext | null = null
+	if (params.enableRAG && params.characterId) {
+		try {
+			ragContext = await getRAGContext(params.message, params.characterId)
+			console.log('[Chat] RAG检索到', ragContext.retrievedMemories.length, '条记忆')
+		} catch (err) {
+			console.warn('[Chat] RAG检索失败:', err)
+		}
+	}
 
 	const res = await fetch('/api/chat', {
 		method: 'POST',
@@ -104,6 +127,7 @@ export async function sendChatMessage(params: ChatParams): Promise<{
 		body: JSON.stringify({
 			...params,
 			userProfile,
+			ragContext: ragContext?.contextString || null,
 		}),
 	})
 
@@ -112,5 +136,16 @@ export async function sendChatMessage(params: ChatParams): Promise<{
 		throw new Error(err.error || '对话失败')
 	}
 
-	return res.json()
+	const result = await res.json() as ChatResult
+	
+	// 将检索到的记忆附加到结果（调试用）
+	if (ragContext && ragContext.retrievedMemories.length > 0) {
+		result.retrievedMemories = ragContext.retrievedMemories.map(m => ({
+			node_id: m.node_id,
+			core_event: m.core_event,
+			similarity: Math.round(m.similarity * 100) / 100,
+		}))
+	}
+	
+	return result
 }

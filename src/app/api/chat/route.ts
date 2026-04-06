@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
 
     // 构建System Prompt，使用传入的人物画像
     const profile = userProfile as UserProfile | undefined
-    const systemPrompt = buildSystemPrompt(
+    let systemPrompt = buildSystemPrompt(
       profile?.base_archetype || {},
       nodeData?.core_event || '',
       nodeData?.memory_source || 'txt_extraction',
@@ -43,6 +43,12 @@ export async function POST(request: NextRequest) {
       nodeData?.opening_mode || 'dialogue_driven',
       isFirstRound,
     )
+    
+    // 注入RAG检索到的记忆上下文
+    const ragContext = body.ragContext as string | null
+    if (ragContext && ragContext.length > 0) {
+      systemPrompt += '\n\n' + ragContext
+    }
 
     // 构建对话历史（Qwen 格式）
     const messages: Array<{ role: string; content: string }> = [
