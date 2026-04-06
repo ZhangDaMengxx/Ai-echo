@@ -1,8 +1,8 @@
 # 📔 Echo Tracks 项目开发日记
 
-> 最后更新: 2026-04-05 23:05  
-> 当前版本: v0.2.0  
-> 开发状态: 🟢 测试中
+> 最后更新: 2026-04-06 16:20  
+> 当前版本: v0.3.3  
+> 开发状态: 🟢 实施中 - AI人物系统
 
 ---
 
@@ -29,26 +29,46 @@
   - [x] Node 4.3: 抉择 API (`/api/choice/commit`)
   - [x] Node 4.4: IF 线分支存储
 
-### Phase 2: 体验优化 (0% / 30%) ⏳ 待开始
+### Phase 2: AI人物系统 (60% / 25%) ✅ 已完成
+- [x] Node 2.1: 数据模型与架构设计 ✅ 已完成
+- [x] Node 2.2: 人物列表页面 ✅ 已完成
+- [x] Node 2.3: 心理学测试流程 ✅ 已完成
+- [x] Node 2.4: 人物创建与切换 ✅ 已完成
 
-### Phase 3: 扩展功能 (0% / 30%)
+### Phase 3: 体验优化 (0% / 30%) ⏳ 待开始
 
 ---
 
 ## 🔄 当前活跃节点
 
-**节点**: Phase 2 体验优化  
-**状态**: ⏳ 待开始  
-**开始时间**: 2026-04-05  
-**预计完成**: 2026-04-10
+**节点**: Phase 2.4 - 人物切换优化与响应式适配  
+**状态**: ✅ 已完成  
+**开始时间**: 2026-04-06 16:10  
+**完成时间**: 2026-04-06 16:20  
+**工时**: 10分钟
 
-### 待完成功能
-- [x] 粒子记忆节点交互原型（已完成）
-- [ ] 用户注册/登录流程（Supabase Auth）
-- [ ] SVG/Canvas 代码生成节点图标
-- [ ] 动态背景氛围系统
-- [ ] 粒子动效优化（Framer Motion）
-- [ ] 响应式适配
+### 已完成内容
+- [x] 创建 `CharacterSwitcher` 人物切换器
+  - Story 页面快速切换人物
+  - 下拉菜单展示所有人物
+  - 显示人物头像、名称、记忆数量
+  - 快捷创建新人物入口
+  - 切换后自动刷新页面
+- [x] Story 页面导航优化
+  - 桌面端和移动端分别布局
+  - 人物切换器集成到导航栏
+  - 情绪切换按钮桌面端显示
+- [x] 响应式适配优化
+  - 首页网格：1列(sm) → 2列(md) → 3列(lg) → 4列(xl)
+  - 创建页面：移动端内边距优化
+  - 步骤指示器：支持横向滚动
+  - 导航栏：移动端简化显示
+
+### 下一步
+- [ ] Phase 3: 体验优化
+  - 性能优化
+  - 动画效果优化
+  - 加载状态优化
 
 ### 已完成原型功能
 - [x] 深色流体背景（Canvas粒子）
@@ -62,6 +82,265 @@
 ---
 
 ## 📋 历史记录
+
+### 2026-04-06 - AI人物系统 Phase 2.4: 人物切换与响应式适配
+
+**完成内容**:
+- ✅ 创建 `CharacterSwitcher` 组件
+  - 头像 + 名称 + 下拉箭头的紧凑设计
+  - 下拉面板展示所有人物列表
+  - 显示人物记忆数量
+  - 当前人物高亮显示
+  - 快捷创建新人物入口
+  - 点击外部自动关闭
+- ✅ Story 页面导航重构
+  - 左侧：返回按钮 + 人物切换器
+  - 中间：Memory/Story/Dialogue 切换（桌面端）
+  - 右侧：情绪切换 + 主题切换（桌面端）
+  - 底部：移动端页面切换栏
+- ✅ 响应式适配
+  - sm (640px+): 2列网格，完整导航
+  - md (768px+): 页面切换显示
+  - lg (1024px+): 3列网格
+  - xl (1280px+): 4列网格
+  - 步骤指示器支持横向滚动
+
+**响应式断点**:
+| 断点 | 网格列数 | 导航布局 |
+|------|---------|---------|
+| <640px | 1列 | 底部页面切换 |
+| 640px+ | 2列 | 侧边导航 |
+| 1024px+ | 3列 | 完整导航 |
+| 1280px+ | 4列 | 完整导航 |
+
+**文件变更**:
+```
+src/
+├── components/
+│   └── CharacterSwitcher.tsx          # 新增 ✨
+├── app/story/page.tsx                 # 修改 - 添加切换器，优化响应式
+└── app/create/page.tsx                # 修改 - 响应式内边距
+```
+
+**测试状态**: 306/307 通过 (1跳过)
+**TypeScript**: ✅ 编译通过
+
+---
+
+### 2026-04-06 - AI人物系统 Phase 2.3: 心理学测试流程
+
+**完成内容**:
+- ✅ 创建 `PersonalityTest` 组件
+  - 5题性格测试（复用现有配置）
+  - 单选形式，选中后自动进入下一题
+  - 进度条实时更新
+  - AnimatePresence 动画切换
+  - 跳过测试功能
+- ✅ 创建 `StepIndicator` 组件
+  - 步骤圆圈 + 连接线设计
+  - 已完成(✓)/当前(高亮)/未开始(灰色)状态
+  - 步骤名称显示
+- ✅ 创建 `ProfileSetup` 组件
+  - 名称输入框（实时验证）
+  - emoji头像网格选择
+  - 拖拽文件上传区域
+  - 上一步/下一步按钮
+- ✅ 创建 `CreateSuccess` 组件
+  - 成功动画（弹簧效果的勾选图标）
+  - 人物信息展示
+  - 性格画像总结卡片
+  - 操作按钮和返回链接
+- ✅ 创建 `/create` 页面
+  - 4步骤完整流程管理
+  - 步骤间状态传递
+  - 文件内容提取节点
+  - 人物创建 + 画像保存 + 节点提交
+  - 错误处理和加载状态
+
+**创建流程**:
+```
+性格测试(5题) → 人物设定(名称+头像+文件) → 节点确认(校准) → 创建成功
+```
+
+**技术实现**:
+- 使用 `generateProfileFromAnswers` 从测试答案生成性格画像
+- 使用 `extractNodes` 从上传文件提取记忆节点
+- 使用 `commitNodes` 提交节点到新建人物
+- localStorage 保存新创建的人物为当前人物
+
+**文件变更**:
+```
+src/
+├── components/
+│   ├── PersonalityTest.tsx            # 新增 ✨
+│   ├── StepIndicator.tsx              # 新增 ✨
+│   ├── ProfileSetup.tsx               # 新增 ✨
+│   └── CreateSuccess.tsx              # 新增 ✨
+├── app/create/
+│   └── page.tsx                       # 新增 ✨ - 创建流程页
+tests/components/
+└── PersonalityTest.test.tsx           # 新增 ✨ - 8个测试
+```
+
+**测试状态**: 306/307 通过 (1跳过)
+**TypeScript**: ✅ 编译通过
+
+---
+
+### 2026-04-06 - AI人物系统 Phase 2.2: 人物列表页面
+
+**完成内容**:
+- ✅ 创建 `CharacterCard` 组件
+  - 玻璃拟态设计风格
+  - 展示头像(emoji)、名称、记忆数量、最近交互时间
+  - 支持点击(打开详情)和双击(进入Story)
+  - 时间格式化：今天/昨天/X天前/上周等
+- ✅ 创建 `CharacterDetailModal` 组件
+  - 玻璃拟态弹窗设计
+  - 展示人物头像、名称、描述
+  - 展示性格画像(表达风格、情感逻辑、主要情绪)
+  - 展示统计数据(记忆节点、隐藏线索、IF线分支)
+  - 返回/进入Story 操作按钮
+- ✅ 重写 `page.tsx` 为人物列表首页
+  - Hero区域：标题+副标题
+  - 人物网格：响应式布局(1-4列)
+  - 右上角[+]创建按钮
+  - 空状态引导
+  - 点击卡片打开详情弹窗
+- ✅ 创建 `/story` 路由
+  - 将原 page.tsx 功能完整迁移
+  - 添加按人物隔离数据支持
+  - 添加返回首页按钮
+- ✅ 更新 `pipeline.ts` commitNodes
+  - 支持 characterId 参数
+  - 向后兼容 commitNodesLegacy
+
+**技术决策**:
+| 决策 | 说明 |
+|------|------|
+| 响应式网格 | 1列(sm) → 2列(md) → 3列(lg) → 4列(xl) |
+| 交互设计 | 单击查看详情，双击快速进入 |
+| 路由结构 | `/` 列表页, `/story` Story页, `/create` 创建页(待实现) |
+| 数据隔离 | Story页使用当前选中人物的ID查询数据 |
+
+**文件变更**:
+```
+src/
+├── components/
+│   ├── CharacterCard.tsx              # 新增 ✨
+│   └── CharacterDetailModal.tsx       # 新增 ✨
+├── app/
+│   ├── page.tsx                       # 重写 - 人物列表首页
+│   └── story/
+│       └── page.tsx                   # 新增 ✨ - Story功能页
+tests/components/
+├── CharacterCard.test.tsx             # 新增 ✨ - 12个测试
+└── CharacterDetailModal.test.tsx      # 新增 ✨ - 11个测试
+```
+
+**测试状态**: 298/299 通过 (1跳过)
+**TypeScript**: ✅ 编译通过
+
+---
+
+### 2026-04-06 - AI人物系统 Phase 1: 架构与数据模型
+
+**完成内容**:
+- ✅ 设计AI人物系统完整方案
+  - 人物目录页面设计
+  - 人物创建流程（心理学测试+文件上传+节点确认）
+  - 5题性格测试题目设计
+  - 多人物数据隔离方案
+- ✅ 实施IndexedDB v3升级
+  - DB_VERSION 1→3
+  - 新增characters表
+  - 为nodes/clues/branches添加character_id索引
+  - 新增character_profiles表（按人物隔离画像）
+- ✅ 创建核心类型定义
+  - Character实体类型
+  - PersonalityQuestion测试题目类型
+  - CreateFlowState创建流程状态
+  - 扩展MemoryNode/HiddenClue/IfLineBranch
+- ✅ 实现心理学测试引擎
+  - 5题性格测试配置
+  - 5维度评分算法（外向性、感性、独立性、直接性、思考性）
+  - 自动生成CharacterProfile
+  - 表达风格/情感逻辑/主导情绪推导
+- ✅ 实现数据操作层
+  - Character CRUD操作
+  - 按人物查询数据（getNodesByCharacter等）
+  - 自动统计更新（nodeCount/clueCount/branchCount）
+  - 数据迁移（v2→v3创建默认ELARA人物）
+- ✅ 实现状态管理
+  - useCharacterStore（Zustand + 持久化）
+  - useCurrentCharacter（自动初始化）
+  - useCharacters（人物列表）
+  - useCharacterDetail（人物详情）
+
+**技术决策**:
+| 决策 | 说明 |
+|------|------|
+| 数据隔离 | 所有数据通过character_id关联，物理隔离 |
+| 默认人物 | 首次使用时自动创建ELARA作为默认人物 |
+| 头像方案 | 支持emoji字符（简单）和Base64图片（高级） |
+| 状态持久化 | Zustand + localStorage保存当前人物ID |
+| 测试题目 | 5题覆盖压力/社交/决策/冲突/关系五个维度 |
+
+**文件变更**:
+```
+src/
+├── types/
+│   └── character.ts                  # 新增 ✨ - 人物类型定义
+docs/
+├── CHARACTER_DIRECTORY_DESIGN.md     # 新增 ✨ - 系统设计方案
+├── CHARACTER_SYSTEM_DESIGN.md        # 新增 ✨ - 详细设计文档
+src/lib/
+├── localDb.ts                        # 修改 - v3升级，多人物支持
+├── personalityTest.ts                # 新增 ✨ - 心理学测试引擎
+src/hooks/
+└── useCurrentCharacter.ts            # 新增 ✨ - 人物状态管理
+```
+
+**测试状态**: 275/276 通过
+**TypeScript**: ✅ 编译通过
+
+---
+
+### 2026-04-06 - Bug修复: 人物名称持久化 + 存储策略实施
+
+**完成内容**:
+- ✅ 修复人物名称刷新回退到 ELARA 的问题
+  - 原因: `aiName` 状态使用硬编码默认值，页面刷新后丢失
+  - 方案: 添加 `useEffect` 在组件挂载时从 IndexedDB profile 恢复人物名称
+- ✅ 实施存储策略方案 (STORAGE_STRATEGY.md)
+  - 创建 `src/lib/exportImport.ts` - JSON 导出/导入功能
+  - 添加 CRC32 校验和确保数据完整性
+  - 支持合并模式和替换模式导入
+  - 添加 `clearAllClues` / `clearAllBranches` 方法到 localDb
+- ✅ 创建设置页面 (`src/app/settings/page.tsx`)
+  - 数据管理卡片: 显示节点数、线索数、人物名称、上次备份时间
+  - 导出备份按钮: 一键导出所有数据为 JSON 文件
+  - 导入备份按钮: 支持文件选择和拖拽导入
+  - 导入状态提示: 成功/失败/加载中状态
+  - 主页面导航栏添加设置入口
+- ✅ 添加单元测试 (`tests/lib/exportImport.test.ts`)
+  - 7个测试用例覆盖导出、导入、验证功能
+
+**文件变更**:
+```
+src/app/page.tsx                     # 修改 - 添加 useEffect 恢复 aiName
+src/app/settings/
+└── page.tsx                          # 新增 ✨ - 设置页面
+src/lib/
+├── localDb.ts                        # 修改 - 添加清空方法
+├── exportImport.ts                   # 新增 ✨ - 导出导入功能
+tests/lib/
+└── exportImport.test.ts              # 新增 ✨ - 单元测试
+```
+
+**测试状态**: 275/275 通过 (1跳过)
+
+---
 
 ### 2026-04-05 - M-test 页面：粒子球节点时间轴
 
@@ -468,13 +747,27 @@ tests/components/
 | 2026-04-05 | 使用 Canvas 实现粒子重组特效 | 性能优化，支持 200+ 粒子 |
 | 2026-04-05 | 根据结局文本推断情感色调 | 自动化全局氛围更新 |
 | 2026-04-05 | 玻璃拟态设计用于抉择 UI | 统一视觉风格 |
+| 2026-04-06 | 人物名称持久化到 IndexedDB | 解决刷新回退问题 |
+| 2026-04-06 | 混合存储策略 (IndexedDB + JSON) | 数据安全与跨设备迁移 |
+| 2026-04-06 | CRC32 校验和 | 备份文件完整性验证 |
+| 2026-04-06 | 多人物数据隔离（character_id） | AI人物系统核心架构 |
+| 2026-04-06 | 5维性格测试模型 | 心理学测试评分算法 |
+| 2026-04-06 | IndexedDB v3 + 自动迁移 | 向后兼容与数据升级 |
 
 ---
 
 ## 📝 Git 提交历史
 
 ```
-待提交（UI原型测试阶段）
+待提交:
+- fix(ui): 人物名称持久化到 IndexedDB
+- feat(storage): 实施存储策略 - JSON 导出导入功能
+- feat(ui): 创建设置页面，支持数据备份与恢复
+- feat(character): AI人物系统架构设计
+- feat(db): IndexedDB v3升级，支持多人物
+- feat(test): 5维心理学测试引擎
+
+历史提交:
 - feat(ui): 深色沉浸式界面原型
   - 流体背景组件
   - Story轮播组件
@@ -515,25 +808,33 @@ d:\Ai_Eco
 ├── echo-tracks-frontend/      # 前端项目
 │   ├── src/
 │   │   ├── app/
-│   │   │   ├── test/          # UI原型测试页面
+│   │   │   ├── settings/      # 设置页面
+│   │   │   ├── m-test/        # 测试页面
 │   │   │   ├── layout.tsx
 │   │   │   └── page.tsx
 │   │   ├── components/
 │   │   │   ├── FluidBackground.tsx    # 流体背景
 │   │   │   ├── StoryCarousel.tsx      # Story轮播
 │   │   │   ├── AIDialog.tsx           # AI对话框
-│   │   │   ├── UserInput.tsx          # 用户输入
-│   │   │   ├── DialogueTags.tsx       # 对话标签
-│   │   │   ├── RadarChart.tsx         # 雷达图
-│   │   │   └── GlassButton.tsx        # 玻璃按钮
-│   │   └── lib/
+│   │   │   ├── CharacterCard.tsx      # ⭐ 人物卡片
+│   │   │   ├── GlassButton.tsx        # 玻璃按钮
+│   │   │   └── ...
+│   │   ├── hooks/
+│   │   │   └── useCurrentCharacter.ts # ⭐ 人物状态管理
+│   │   ├── lib/
+│   │   │   ├── localDb.ts             # IndexedDB封装
+│   │   │   ├── personalityTest.ts     # ⭐ 心理学测试
+│   │   │   └── exportImport.ts        # 数据导出导入
+│   │   └── types/
+│   │       └── character.ts           # ⭐ 人物类型定义
+│   ├── docs/
+│   │   ├── CHARACTER_DIRECTORY_DESIGN.md  # ⭐ 人物系统设计
+│   │   └── CHARACTER_SYSTEM_DESIGN.md     # ⭐ 详细设计文档
 │   ├── tests/
 │   └── package.json
-├── echo-tracks-backend/       # 后端项目
 ├── skills/                    # Agent Skill
 │   └── echo-tracks-auto-dev/
-├── project-diary.md           # 本日记
-└── 项目方案V3.0_回音轨迹_工程执行蓝图.md  # 需求文档
+└── project-diary.md           # 本日记
 ```
 
 ---

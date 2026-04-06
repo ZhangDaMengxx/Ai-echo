@@ -31,6 +31,18 @@ src/
 | **DialogueTags** | `src/components/DialogueTags.tsx` | 对话提示标签环绕 | - |
 | **FateChoice** | `src/components/FateChoice.tsx` | 命运抉择 UI（拥抱遗憾/逆天改命） | ParticleReassemble |
 
+### 人物系统组件 (Phase 2)
+
+| 组件 | 文件路径 | 功能描述 | 主要依赖 |
+|------|----------|----------|----------|
+| **CharacterCard** | `src/components/CharacterCard.tsx` | ⭐ 人物卡片（玻璃拟态） | framer-motion |
+| **CharacterDetailModal** | `src/components/CharacterDetailModal.tsx` | ⭐ 人物详情弹窗 | framer-motion |
+| **CharacterSwitcher** | `src/components/CharacterSwitcher.tsx` | ⭐ 人物切换器（Story页面） | framer-motion |
+| **PersonalityTest** | `src/components/PersonalityTest.tsx` | ⭐ 5题性格测试组件 | framer-motion |
+| **StepIndicator** | `src/components/StepIndicator.tsx` | ⭐ 步骤指示器 | framer-motion |
+| **ProfileSetup** | `src/components/ProfileSetup.tsx` | ⭐ 人物设定（名称+头像+文件） | - |
+| **CreateSuccess** | `src/components/CreateSuccess.tsx` | ⭐ 创建成功页 | framer-motion |
+
 ### 情绪与氛围组件
 
 | 组件 | 文件路径 | 功能描述 | 主要依赖 |
@@ -261,13 +273,13 @@ page.tsx
 
 | 模块 | 测试文件 | 测试数量 |
 |------|----------|----------|
-| components | tests/components/*.test.tsx | 100+ |
+| components | tests/components/*.test.tsx | 120+ |
 | hooks | tests/hooks/*.test.ts | 25+ |
 | api | tests/api/*.test.ts | 17+ |
-| lib | tests/lib/*.test.ts | 15+ |
+| lib | tests/lib/*.test.ts | 20+ |
 
 ---
 
 **最后更新**: 2026-04-06  
-**版本**: v0.3.0  
+**版本**: v0.3.3  
 **维护者**: Echo Tracks Team

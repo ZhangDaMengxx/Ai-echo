@@ -35,3 +35,13 @@ NEXT_PUBLIC_API_URL=http://localhost:3001
 - Next.js 14 + TypeScript + Tailwind CSS
 - Framer Motion (动画)
 - Lucide React (图标)
+- IndexedDB (本地数据存储)
+
+## 功能特性
+
+- **AI人物系统**: 创建多个人物，每个独立的数据和记忆
+- **心理学测试**: 5题性格测试生成人物画像
+- **记忆管理**: 文件上传、节点提取、校准
+- **Story轮播**: 3D轮播展示记忆节点
+- **沉浸对话**: AI对话系统，支持线索解锁
+- **数据导出**: JSON格式备份和恢复

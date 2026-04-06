@@ -2,10 +2,11 @@
 // Pipeline API 客户端
 // 描述: 数据清洗流水线的 extract / commit 调用封装
 // 更新: 使用 IndexedDB 本地存储替代服务器存储
+// 更新: v3 - 支持多人物系统
 // ============================================================
 
 import { DraftNode } from '@/components/PipelineCalibration';
-import { localDb, CharacterProfile, HiddenClue } from './localDb';
+import { localDb, CharacterProfile, HiddenClue, MemoryNode } from './localDb';
 
 // 生成唯一ID
 function generateId(): string {
@@ -74,7 +75,14 @@ export async function extractNodes(text: string): Promise<{
 	};
 }
 
+/**
+ * 提交节点到指定人物
+ * @param characterId 目标人物ID
+ * @param nodes 草稿节点
+ * @param characterBase 性格基座（可选）
+ */
 export async function commitNodes(
+	characterId: string,
 	nodes: DraftNode[],
 	characterBase?: CharacterBase
 ): Promise<{
@@ -87,6 +95,7 @@ export async function commitNodes(
 	const payload = nodes.map((node) => {
 		const nodeId = generateId();
 		return {
+			character_id: characterId,
 			event_date: node.event_date || new Date().toISOString().split('T')[0],
 			core_event: node.core_event,
 			npc_state: {
@@ -96,6 +105,7 @@ export async function commitNodes(
 			salience_score: node.salience_score,
 			hidden_clues: (node.hidden_clues || []).map((c): HiddenClue => ({
 				clue_id: generateId(),
+				character_id: characterId,
 				node_id: nodeId,
 				trigger_condition: c.trigger,
 				clue_content: c.content,
@@ -103,7 +113,6 @@ export async function commitNodes(
 			})),
 			memory_source: node.memory_source as 'txt_extraction' | 'user_supplement',
 			opening_mode: node.opening_mode as 'action_driven' | 'dialogue_driven',
-			character_name: characterBase?.name,
 		};
 	});
 
@@ -113,7 +122,7 @@ export async function commitNodes(
 		global_vibe: 'neutral',
 	} : undefined;
 
-	const result = await localDb.commitMemoryBatch(payload, profile);
+	const result = await localDb.commitMemoryBatch(characterId, payload, profile);
 
 	return {
 		success: true,
@@ -121,4 +130,25 @@ export async function commitNodes(
 		clueCount: result.clueCount,
 		nodeIds: result.nodeIds,
 	};
+}
+
+/**
+ * 提交节点到当前人物（向后兼容）
+ * @deprecated 请使用带 characterId 的版本
+ */
+export async function commitNodesLegacy(
+	nodes: DraftNode[],
+	characterBase?: CharacterBase
+): Promise<{
+	success: boolean;
+	nodeCount: number;
+	clueCount: number;
+	nodeIds: string[];
+}> {
+	// 获取默认人物
+	const defaultChar = await localDb.getDefaultCharacter();
+	if (!defaultChar) {
+		throw new Error('没有可提交的人物，请先创建人物');
+	}
+	return commitNodes(defaultChar.id, nodes, characterBase);
 }

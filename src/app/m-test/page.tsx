@@ -9,7 +9,7 @@ import { RadarChart } from '@/components/RadarChart';
 import { TranslucentContainer } from '@/components/TranslucentContainer';
 import { useTheme } from '@/components/ThemeProvider';
 import { ParticleNodeTimeline, TimelineNode } from '@/components/ParticleNodeTimeline';
-import { extractNodes, commitNodes, CharacterBase } from '@/lib/pipeline';
+import { extractNodes, commitNodesLegacy, CharacterBase } from '@/lib/pipeline';
 
 // 校准模式类型
 type ViewMode = 'upload' | 'timeline' | 'detail';
@@ -154,7 +154,7 @@ export default function MTestPage() {
 	const handleCommit = async () => {
 		setIsCommitting(true);
 		try {
-			await commitNodes(nodes, characterBase || undefined);
+			await commitNodesLegacy(nodes, characterBase || undefined);
 			setViewMode('upload');
 			setNodes([]);
 			setPipelineStage('idle');

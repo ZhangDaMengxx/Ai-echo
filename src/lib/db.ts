@@ -91,11 +91,15 @@ export async function deleteMemoryNode(nodeId: string): Promise<void> {
  * @returns 创建的线索数组
  */
 export async function createHiddenClues(
-	clues: Omit<HiddenClue, 'clue_id' | 'created_at'>[]
+	characterId: string,
+	clues: Omit<HiddenClue, 'clue_id' | 'character_id' | 'created_at'>[]
 ): Promise<HiddenClue[]> {
 	const created: HiddenClue[] = [];
 	for (const clue of clues) {
-		const c = await localDb.insertClue(clue);
+		const c = await localDb.insertClue({
+			...clue,
+			character_id: characterId
+		});
 		created.push(c);
 	}
 	return created;
@@ -169,8 +173,9 @@ export async function searchSimilarNodes(
  * @returns 创建的节点和线索
  */
 export async function commitMemoryBatch(
-	nodes: Omit<MemoryNode, 'node_id' | 'created_at'>[],
-	cluesMap: Record<string, Omit<HiddenClue, 'clue_id' | 'node_id' | 'created_at'>[]>
+	characterId: string,
+	nodes: Omit<MemoryNode, 'node_id' | 'character_id' | 'created_at'>[],
+	cluesMap: Record<string, Omit<HiddenClue, 'clue_id' | 'character_id' | 'node_id' | 'created_at'>[]>
 ): Promise<{
 	nodes: MemoryNode[];
 	clues: HiddenClue[];
@@ -180,7 +185,10 @@ export async function commitMemoryBatch(
 
 	for (const node of nodes) {
 		// 创建节点
-		const createdNode = await localDb.insertNode(node);
+		const createdNode = await localDb.insertNode({
+			...node,
+			character_id: characterId
+		});
 		createdNodes.push(createdNode);
 
 		// 创建关联线索
@@ -188,6 +196,7 @@ export async function commitMemoryBatch(
 		for (const clue of clues) {
 			const createdClue = await localDb.insertClue({
 				...clue,
+				character_id: characterId,
 				node_id: createdNode.node_id,
 			});
 			createdClues.push(createdClue);
