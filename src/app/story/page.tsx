@@ -112,6 +112,7 @@ export default function StoryPage() {
 		npc_state?: { current_emotion?: string; attitude_towards_user?: string }
 		memory_source?: string
 		opening_mode?: string
+		event_date?: string
 	}>>({});
 
 	// 加载 Story 节点（按当前人物过滤，按时间排序）
@@ -334,7 +335,7 @@ export default function StoryPage() {
 			);
 			
 			// 构建所有记忆的上下文
-			const memoriesContext = sortedNodes.map((n, i) => 
+			const memoriesContext = sortedNodes.map((n) => 
 				`[${n.event_date}] ${n.core_event}`
 			).join('\n');
 			setAllMemoriesContext(memoriesContext);

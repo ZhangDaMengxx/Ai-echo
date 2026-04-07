@@ -18,6 +18,7 @@
 
 import { localDb, MemoryNode, HiddenClue, IfLineBranch, CharacterProfileExtended } from '@/lib/localDb';
 import { Character } from '@/types/character';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { BackupData, generateChecksum } from '@/lib/exportImport';
 
 const MIGRATION_HISTORY_KEY = 'migrationHistory';
@@ -158,10 +159,12 @@ export async function previewMigration(sourceData: MigrationData): Promise<Migra
 	// 分析人物
 	const charDetails: Array<{ id: string; name: string; status: 'new' | 'duplicate' }> = [];
 	let newCharacters = 0;
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	let duplicateCharacters = 0;
 
 	for (const char of sourceData.characters || []) {
 		if (existingCharIds.has(char.id)) {
+			// eslint-disable-next-line @typescript-eslint/no-unused-vars
 			duplicateCharacters++;
 			charDetails.push({ id: char.id, name: char.name, status: 'duplicate' });
 		} else {
@@ -221,6 +224,7 @@ export async function executeMigration(
 			const existing = await localDb.getCharacterById(char.id);
 			if (!existing) {
 				await new Promise<void>((resolve, reject) => {
+					// eslint-disable-next-line @typescript-eslint/no-explicit-any
 					const tx = (localDb as any).db.transaction('characters', 'readwrite');
 					const store = tx.objectStore('characters');
 					const request = store.put(char);

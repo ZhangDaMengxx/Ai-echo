@@ -44,6 +44,7 @@ export async function POST(request: NextRequest) {
 		});
 
 		if (!response.ok) {
+			// eslint-disable-next-line @typescript-eslint/no-unused-vars
 			const errorText = await response.text();
 			console.error('[API Embedding] API failed:', response.status);
 			return NextResponse.json(

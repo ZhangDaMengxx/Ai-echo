@@ -67,6 +67,7 @@ export interface ChatParams {
 		npc_state?: Record<string, unknown>
 		memory_source?: string
 		opening_mode?: string
+		event_date?: string
 	}
 	isFirstRound?: boolean
 	/** 人物ID，用于获取画像 */

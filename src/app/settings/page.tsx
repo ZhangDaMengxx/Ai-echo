@@ -55,6 +55,7 @@ export default function SettingsPage() {
 	const [autoBackupInterval, setAutoBackupInterval] = useState(7);
 	const [lastAutoBackup, setLastAutoBackup] = useState<number | null>(null);
 	const [showMigrationWizard, setShowMigrationWizard] = useState(false);
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	const [migrationHistory, setMigrationHistory] = useState<any[]>([]);
 
 	// 启用自动备份 Hook
