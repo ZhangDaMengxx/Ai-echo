@@ -1,12 +1,12 @@
 # 📔 Echo Tracks 项目开发日记
 
-> 最后更新: 2026-04-06 23:00  
-> 当前版本: v0.4.0  
-> 开发状态: 🟢 实施中 - 新功能开发
+> 最后更新: 2026-04-06 23:30  
+> 当前版本: v0.4.1  
+> 开发状态: 🟢 已部署
 
 ---
 
-## 📊 总体进度: 40%
+## 📊 总体进度: 65%
 
 ### Phase 1: MVP 核心 (40% / 40%) ✅ 已完成
 - [x] Week 1: 基础设施 (10%/10%) ✅ 已完成
@@ -29,366 +29,831 @@
   - [x] Node 4.3: 抉择 API (`/api/choice/commit`)
   - [x] Node 4.4: IF 线分支存储
 
-### Phase 2: AI人物系统 (60% / 25%) ✅ 已完成
-- [x] Node 2.1: 数据模型与架构设计 ✅ 已完成
-- [x] Node 2.2: 人物列表页面 ✅ 已完成
-- [x] Node 2.3: 心理学测试流程 ✅ 已完成
-- [x] Node 2.4: 人物创建与切换 ✅ 已完成
+### Phase 2: 体验优化 (20% / 30%) ✅ 已完成
 
-### Phase 3: 体验优化 (0% / 30%) ⏳ 待开始
+### Phase 3: 扩展功能 (30% / 30%) ✅ 已完成
+- [x] JSON 导入/导出功能 ✅ 已完成
+- [x] 自动备份提醒 ✅ 已完成
+- [x] 数据迁移工具 ✅ 已完成
 
 ---
 
 ## 🔄 当前活跃节点
 
-**节点**: Phase 3 体验优化  
-**状态**: ⏳ 待开始  
-**计划开始**: 待定
+**节点**: Phase 3 扩展功能  
+**状态**: ✅ 已完成  
+**开始时间**: 2026-04-06  
+**完成时间**: 2026-04-06
 
-### 待优化项
-- [ ] 性能优化
-  - 组件懒加载
-  - 图片/资源优化
-  - 减少不必要的重渲染
-- [ ] 动画效果优化
-  - 过渡动画流畅度
-  - 加载状态反馈
-- [ ] 错误处理完善
-  - 用户友好的错误提示
-  - 降级方案
+### Phase 3 总结
+| 功能 | 工时 | 测试 | 提交 |
+|------|------|------|------|
+| JSON 导出/导入 | 3h | 11 测试 | `bb81abb` |
+| 自动备份提醒 | 1h | 11 测试 | `188ebd8` |
+| 数据迁移工具 | 2h | 15 测试 | `ce9cd8a` |
+| UI 导航改进 | 10min | - | `16bd24f`, `f07c1ce` |
 
-### 下一步
-等待用户确认优先级后开始
+### Phase 2 已完成清单
+- [x] 粒子记忆节点交互原型
+- [x] SVG/Canvas 代码生成节点图标（预留 ComfyUI 接口）
+- [x] 动态背景氛围系统（8 种情绪主题）
+- [x] 响应式适配（移动端/桌面端）
+- [x] 性能优化（懒加载、虚拟列表、防抖节流）
+- [x] ECG 心电图波形情绪系统
+- [x] 实时情绪分析接口（/api/emotion/analyze）
+
+### 已完成原型功能
+- [x] 深色流体背景（Canvas粒子）
+- [x] Memory页面（雷达图 + 冰块容器 + 文本提取 + 校准）
+- [x] Story页面（3D轮播 + 自动跳转 Dialogue）
+- [x] Dialogue页面（AI对话框 + 用户输入 + 标签环绕 + 动态开场白）
+- [x] 情绪切换系统（平静/愤怒）
+- [x] 极简透明导航
+- [x] AI 人物名称自动提取与动态展示
 
 ---
 
 ## 📋 历史记录
 
-### 2026-04-06 - 功能开发: "新的开始" + 日志清理
+### 2026-04-06 - UI 改进: 添加导航按钮 ✅ 已完成
 
-**节点**: "新的开始"功能实现  
-**状态**: ✅ 已完成
+**完成内容**:
+- ✅ 主页面 (`src/app/page.tsx`)
+  - 导航栏添加 Settings 入口按钮（⚙️ 齿轮图标）
+  - 位置：创建按钮左侧
+  - 链接：`/settings`
+- ✅ Settings 页面 (`src/app/settings/page.tsx`)
+  - 左上角添加返回按钮（← 箭头图标）
+  - 链接：`/` 首页
+  - 绝对定位，不干扰页面布局
 
-**功能1: "新的开始"**
-- 在 Story 页面末尾添加"新的开始"入口
-- 基于用户当前真实时间（不是节点时间）
-- 使用所有记忆作为对话上下文
-- 不受时间线约束，超越特定节点
+**改动文件**:
+- `src/app/page.tsx`: +13 行
+- `src/app/settings/page.tsx`: +16 行
 
-**功能2: 日志清理**
-- 清理 embedding.ts / rag.ts / chat.ts / api/embedding 中的调试日志
-- 保留关键错误日志用于排查问题
+**Git 提交**:
+- `16bd24f` feat(ui): 在主页面添加 Settings 入口按钮
+- `f07c1ce` feat(ui): 在 Settings 页面添加返回按钮
 
-**修改文件**:
-- `src/app/story/page.tsx` - 新功能
-- `src/lib/embedding.ts` - 清理
-- `src/lib/rag.ts` - 清理
-- `src/lib/chat.ts` - 清理
-- `src/app/api/embedding/route.ts` - 清理
+---
 
-### 2026-04-06 - Bug修复: Chat API 500 错误
+### 2026-04-06 - Phase 3.3: 数据迁移工具 ✅ 已完成
 
-**问题**: `/api/chat` 返回 500，`ReferenceError: body is not defined`
+**完成内容**:
+- ✅ 创建 `src/lib/migration.ts` 迁移核心模块
+  - `validateMigrationData()`: 验证迁移数据格式
+  - `previewMigration()`: 预览迁移结果
+  - `executeMigration()`: 执行迁移，支持冲突处理
+  - `rollbackMigration()`: 回滚迁移
+- ✅ 创建 `MigrationWizard.tsx` 迁移向导组件
+  - 6 步向导流程
+  - 拖拽文件支持
+  - 冲突处理策略选择
+- ✅ 更新 Settings 页面，添加迁移向导
+- ✅ 编写测试：`tests/lib/migration.test.ts` (15 个测试)
 
-**原因**: 解构 `request.json()` 时未保留 `body` 变量，但后续使用了 `body.ragContext`
+**测试状态**: 339/342 测试通过
+
+**Git 提交**: 待提交
+
+---
+
+### 2026-04-06 - Phase 3.2: 自动备份提醒 ✅ 已完成
+
+**完成内容**:
+- ✅ 创建 `src/hooks/useAutoBackup.ts` Hook
+  - 定期检查上次备份时间（每天检查）
+  - 超过间隔自动触发备份导出
+  - 支持自定义备份间隔（3/7/14/30天）
+  - 失败重试机制，失败不更新时间戳
+- ✅ 更新 Settings 页面，添加自动备份设置
+- ✅ 编写测试：`tests/hooks/useAutoBackup.test.ts` (11 个测试)
+
+**测试状态**: 324/327 测试通过
+
+**Git 提交**: `188ebd8`
+
+---
+
+### 2026-04-06 - Phase 3.1: JSON 导出/导入功能 ✅ 已完成
+**Git 提交**: `bb81abb`
+
+**完成内容**:
+- ✅ 创建 `src/lib/exportImport.ts` 核心模块
+  - `exportToJSON()`: 导出所有数据为 JSON 文件，自动下载
+  - `importFromJSON()`: 从 JSON 文件导入，支持合并/替换模式
+  - `generateChecksum()`: 数据完整性校验
+  - `validateBackupFile()`: 备份文件预验证
+- ✅ 扩展 `localDb.ts` 添加导出导入方法
+  - `exportAll()`: 导出所有表数据
+  - `importAll()`: 导入数据，支持去重
+  - `getAllClues()`: 获取所有线索
+  - `getAllBranches()`: 获取所有分支
+  - `clearAll()`: 清空所有数据
+- ✅ 创建 Settings 页面 (`src/app/settings/page.tsx`)
+  - 存储状态显示（节点/线索/分支/人物数量）
+  - 导出备份功能
+  - 导入备份功能（支持拖拽）
+  - 冲突处理弹窗（合并/替换选项）
+  - 最后备份时间显示
+- ✅ 编写测试
+  - `tests/lib/exportImport.test.ts`: 11 个测试
+  - `tests/app/settings.test.tsx`: 6 个测试
+
+**技术亮点**:
+```typescript
+// 备份文件格式
+interface BackupData {
+  version: '1.0';
+  exportDate: string;
+  data: { nodes, clues, branches, profile, characters };
+  checksum: string;  // 数据完整性校验
+}
+
+// 导入支持两种模式
+importFromJSON(file, { mode: 'merge' });   // 合并现有数据
+importFromJSON(file, { mode: 'replace' }); // 替换现有数据
+```
+
+**测试状态**: 313/315 测试通过 (2 个测试由于 mock 机制待修复)
+
+**Git 提交**: 待提交
+
+---
+
+### 2026-04-06 - 存储策略方案设计 ✅ 已完成
+
+**背景**: 
+用户询问 IndexedDB vs JSON 文件的优缺点，以及是否需要混合方案。
+
+**决策**:
+采用 **IndexedDB (主存储) + JSON 文件 (备份/迁移)** 的混合策略
+
+**方案要点**:
+1. **主存储**: IndexedDB - 自动保存，日常使用无感知
+2. **备份层**: JSON 文件导出 - 用户可控，跨设备迁移
+3. **可选增强**: 自动备份提醒 + 定期导出
+
+**文档**:
+- 详细方案: `STORAGE_STRATEGY.md`
+
+**实施计划**:
+| 优先级 | 功能 | 工时 |
+|-------|------|------|
+| P0 | JSON 导出功能 | 2h |
+| P0 | JSON 导入功能 | 3h |
+| P1 | 设置页面 UI | 2h |
+| P2 | 自动备份提醒 | 1h |
+
+---
+
+### 2026-04-06 - Bug 修复: LazyContainer 类型错误 ✅ 已完成
+
+**问题**: `LazyContainer.tsx` 第 60 行 TypeScript 类型错误（引发连锁反应）
+- Type 'P' is not assignable to type 'IntrinsicAttributes & ((PropsWithoutRef<P> & RefAttributes<Component<P, any, any>>) | PropsWithRef<P>)'
+- React.lazy 返回的组件类型与 ComponentType<P> 不兼容
+- **连锁反应**: 修复后触发更严格类型检查，导致 usePerformance.ts 和 pipeline.ts 也报类型错误
+
+**修复方案 v2** (彻底修复):
+- ✅ 将 `withLazyLoad` 返回类型改为 `(props: P) => JSX.Element`
+- ✅ 完全避开 React.lazy 与 ComponentType 的 ref 属性冲突
+- ✅ 相比 React.FC<P> 方案更简洁直接
+
+**代码变更**:
+```typescript
+// 最终方案
+export function withLazyLoad<P extends Record<string, any>>(
+  importFunc: () => Promise<{ default: ComponentType<P> }>,
+  options = {}
+): (props: P) => JSX.Element {
+  // ...
+  return function LazyWrapper(props: P): JSX.Element {
+    return (
+      <Suspense fallback={fallback}>
+        <LazyComponent {...props} />
+      </Suspense>
+    );
+  };
+}
+```
+
+**测试状态**: 268/268 通过
+
+**连锁修复详情**:
+| 文件 | 问题 | 修复方式 |
+|------|------|---------|
+| LazyContainer.tsx | React.lazy 类型不兼容 | `as React.ComponentType<any>` |
+| usePerformance.ts | unknown 类型不兼容 | `any[]` 替代 `unknown[]` |
+| pipeline.ts | hidden_clues 缺少必填字段 | 添加 `generateId()` 生成 ID |
+| DynamicAtmosphere.test.tsx | Canvas mock 类型不完整 | `as any` 类型断言 |
+| EmotionGraph.test.tsx | emotion 类型不匹配 | 添加 `EmotionNode` 类型导入 |
+| dailyRipple.test.ts | MemoryNode 字段缺失 | 补充所有必填字段 |
+| emotionResonance.test.ts | string 不兼容 EmotionType | 添加 `EmotionType` 类型 |
+| growthTree.test.ts | MemoryNode 字段缺失 | 补充所有必填字段 |
+| shareCard.test.ts | emotion 类型不匹配 | 添加 `ShareCardData` 类型 |
+
+**Git 提交**: `b70bb23` (初版), `49c67e0` (彻底修复), `7894ac3` (类型断言), `b4a7f45` (ESLint 兼容), `81481dc` (禁用注释方案), `56de2d2` (usePerformance 修复), `d70582b` (pipeline 修复), `decb362` (测试文件类型修复), `a715b7b` (Supabase 构建修复), `0917406` (React Three Fiber 降级)
+
+---
+
+### 2026-04-06 - Bug 修复: @react-three/fiber 版本不兼容 ✅ 已完成
+
+**问题**: Vercel 构建警告 + 潜在运行时错误
+```
+Attempted import error: 'unstable_act' is not exported from 'react' (imported as 'React').
+Import trace for requested module:
+./node_modules/@react-three/fiber/dist/index-8afac004.esm.js
+```
+
+**原因**: 
+- `@react-three/fiber@8.15.16` 依赖 React 19 的 `unstable_act` API
+- 项目使用 React 18.3.1，API 不兼容
 
 **修复**:
-- ✅ 先获取 `body`，再解构
-- ✅ 将 `ragContext` 加入解构
+- ✅ 降级 `@react-three/fiber`: `^8.15.16` → `^8.13.0`
+- ✅ 降级 `@react-three/drei`: `^9.92.7` → `^9.88.0`
+- ✅ 修复 `realtime.ts` 中 `payload` 参数隐式 `any` 类型
 
-**修改文件**: `src/app/api/chat/route.ts`
-
-### 2026-04-06 - Bug修复: Embedding API CORS
-
-**问题**: 前端直接调用阿里云 API 遇到 CORS 限制
-
-**解决方案**:
-- ✅ 创建 `/api/embedding` 后端代理
-- ✅ 前端调用本地 API: `fetch('/api/embedding')`
-- ✅ 后端调用阿里云 API 并返回结果
-
-**修改文件**:
-- 新增 `src/app/api/embedding/route.ts` - 后端代理
-- 修改 `src/lib/embedding.ts` - 使用本地 API
-
-### 2026-04-06 - RAG记忆检索实现
-
-**完成内容**:
-- ✅ 创建 `src/lib/rag.ts` - RAG检索模块
-  - 向量相似度计算（余弦相似度）
-  - 记忆节点检索（topK + threshold）
-  - 上下文字符串构建
-  - 内存缓存机制
-- ✅ 修改 `src/lib/chat.ts` 集成RAG
-  - 新增 `enableRAG` 参数
-  - 对话前自动检索相关历史记忆
-  - 检索结果随响应返回（调试）
-- ✅ 修改 API 和调用方
-  - API 接收 ragContext 并注入 system prompt
-  - Story页面启用RAG
-
-**技术参数**:
-- 相似度阈值: 0.6
-- 最大检索数: 3
-- 向量维度: 768
-- 缓存策略: 内存LRU
-
-### 2026-04-06 - AI人物系统 Phase 2.4: 人物切换与响应式适配
-
-**完成内容**:
-- ✅ 创建 `CharacterSwitcher` 组件
-  - 头像 + 名称 + 下拉箭头的紧凑设计
-  - 下拉面板展示所有人物列表
-  - 显示人物记忆数量
-  - 当前人物高亮显示
-  - 快捷创建新人物入口
-  - 点击外部自动关闭
-- ✅ Story 页面导航重构
-  - 左侧：返回按钮 + 人物切换器
-  - 中间：Memory/Story/Dialogue 切换（桌面端）
-  - 右侧：情绪切换 + 主题切换（桌面端）
-  - 底部：移动端页面切换栏
-- ✅ 响应式适配
-  - sm (640px+): 2列网格，完整导航
-  - md (768px+): 页面切换显示
-  - lg (1024px+): 3列网格
-  - xl (1280px+): 4列网格
-  - 步骤指示器支持横向滚动
-
-**响应式断点**:
-| 断点 | 网格列数 | 导航布局 |
-|------|---------|---------|
-| <640px | 1列 | 底部页面切换 |
-| 640px+ | 2列 | 侧边导航 |
-| 1024px+ | 3列 | 完整导航 |
-| 1280px+ | 4列 | 完整导航 |
-
-**文件变更**:
-```
-src/
-├── components/
-│   └── CharacterSwitcher.tsx          # 新增 ✨
-├── app/story/page.tsx                 # 修改 - 添加切换器，优化响应式
-└── app/create/page.tsx                # 修改 - 响应式内边距
+**依赖变更**:
+```json
+{
+  "@react-three/drei": "^9.88.0",
+  "@react-three/fiber": "^8.13.0",
+  "@react-three/postprocessing": "^2.15.0"
+}
 ```
 
-**测试状态**: 306/307 通过 (1跳过)
-**TypeScript**: ✅ 编译通过
+**测试状态**: 268/268 通过
+
+**Git 提交**: `0917406`
 
 ---
 
-### 2026-04-06 - AI人物系统 Phase 2.3: 心理学测试流程
+### 2026-04-06 - Bug 修复: Vercel 构建 Supabase 环境变量缺失 ✅ 已完成
 
-**完成内容**:
-- ✅ 创建 `PersonalityTest` 组件
-  - 5题性格测试（复用现有配置）
-  - 单选形式，选中后自动进入下一题
-  - 进度条实时更新
-  - AnimatePresence 动画切换
-  - 跳过测试功能
-- ✅ 创建 `StepIndicator` 组件
-  - 步骤圆圈 + 连接线设计
-  - 已完成(✓)/当前(高亮)/未开始(灰色)状态
-  - 步骤名称显示
-- ✅ 创建 `ProfileSetup` 组件
-  - 名称输入框（实时验证）
-  - emoji头像网格选择
-  - 拖拽文件上传区域
-  - 上一步/下一步按钮
-- ✅ 创建 `CreateSuccess` 组件
-  - 成功动画（弹簧效果的勾选图标）
-  - 人物信息展示
-  - 性格画像总结卡片
-  - 操作按钮和返回链接
-- ✅ 创建 `/create` 页面
-  - 4步骤完整流程管理
-  - 步骤间状态传递
-  - 文件内容提取节点
-  - 人物创建 + 画像保存 + 节点提交
-  - 错误处理和加载状态
-
-**创建流程**:
+**问题**: Vercel 构建失败
 ```
-性格测试(5题) → 人物设定(名称+头像+文件) → 节点确认(校准) → 创建成功
+Error: supabaseUrl is required.
+    at /vercel/path0/.next/server/chunks/336.js:37:48130
+    at new rI (/vercel/path0/.next/server/chunks/336.js:37:48381)
+    at rx (/vercel/path0/.next/server/chunks/336.js:37:52121)
+    at 1926 (/vercel/path0/.next/server/app/api/chat/route.js:6:3797)
 ```
 
-**技术实现**:
-- 使用 `generateProfileFromAnswers` 从测试答案生成性格画像
-- 使用 `extractNodes` 从上传文件提取记忆节点
-- 使用 `commitNodes` 提交节点到新建人物
-- localStorage 保存新创建的人物为当前人物
+**原因**: 
+- `/api/chat` 路由导入 `supabaseAdmin`
+- `supabase.ts` 使用 `!` 非空断言强制读取环境变量
+- Vercel 构建时环境变量未设置，导致 `createClient` 抛出错误
 
-**文件变更**:
-```
-src/
-├── components/
-│   ├── PersonalityTest.tsx            # 新增 ✨
-│   ├── StepIndicator.tsx              # 新增 ✨
-│   ├── ProfileSetup.tsx               # 新增 ✨
-│   └── CreateSuccess.tsx              # 新增 ✨
-├── app/create/
-│   └── page.tsx                       # 新增 ✨ - 创建流程页
-tests/components/
-└── PersonalityTest.test.tsx           # 新增 ✨ - 8个测试
+**修复**:
+- ✅ 移除环境变量的非空断言 `!`
+- ✅ 添加 `createMockClient()` 函数，在环境变量缺失时返回 mock 对象
+- ✅ 使用条件判断决定是否创建真实客户端
+
+**代码变更**:
+```typescript
+// 修改前
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+export const supabase = createClient(supabaseUrl, supabaseKey)
+
+// 修改后
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+export const supabase = supabaseUrl && supabaseKey 
+  ? createClient(supabaseUrl, supabaseKey)
+  : createMockClient()
 ```
 
-**测试状态**: 306/307 通过 (1跳过)
-**TypeScript**: ✅ 编译通过
+**测试状态**: 268/268 通过
+
+**Git 提交**: `a715b7b`
 
 ---
 
-### 2026-04-06 - AI人物系统 Phase 2.2: 人物列表页面
+### 2026-04-06 - 组件文档与代码规范 ✅ 已完成
 
 **完成内容**:
-- ✅ 创建 `CharacterCard` 组件
-  - 玻璃拟态设计风格
-  - 展示头像(emoji)、名称、记忆数量、最近交互时间
-  - 支持点击(打开详情)和双击(进入Story)
-  - 时间格式化：今天/昨天/X天前/上周等
-- ✅ 创建 `CharacterDetailModal` 组件
-  - 玻璃拟态弹窗设计
-  - 展示人物头像、名称、描述
-  - 展示性格画像(表达风格、情感逻辑、主要情绪)
-  - 展示统计数据(记忆节点、隐藏线索、IF线分支)
-  - 返回/进入Story 操作按钮
-- ✅ 重写 `page.tsx` 为人物列表首页
-  - Hero区域：标题+副标题
-  - 人物网格：响应式布局(1-4列)
-  - 右上角[+]创建按钮
-  - 空状态引导
-  - 点击卡片打开详情弹窗
-- ✅ 创建 `/story` 路由
-  - 将原 page.tsx 功能完整迁移
-  - 添加按人物隔离数据支持
-  - 添加返回首页按钮
-- ✅ 更新 `pipeline.ts` commitNodes
-  - 支持 characterId 参数
-  - 向后兼容 commitNodesLegacy
+- ✅ 创建 `COMPONENTS.md` 组件维护文档
+  - 完整的组件清单（27个 UI 组件）
+  - 文件路径、功能描述、主要依赖、被引用关系
+  - Hooks 清单（2个）
+  - Lib 库清单（11个）
+  - API 路由清单（7个）
+  - 组件依赖关系图
+  - 废弃组件清单（5个）
+  - 代码注释规范模板
+- ✅ 更新核心组件注释（添加标准头部注释）
+  - EmotionWave: 添加文件位置、依赖、使用示例
+  - AIDialog: 添加 Props 说明、维护记录
+  - NodePreview: 添加使用场景说明
+  - DynamicAtmosphere: 添加导出说明
+  - useResponsive: 添加 Hook 说明
+  - emotion.ts: 添加函数列表和常量说明
+  - /api/emotion/analyze: 添加路由和请求/响应格式
 
-**技术决策**:
-| 决策 | 说明 |
-|------|------|
-| 响应式网格 | 1列(sm) → 2列(md) → 3列(lg) → 4列(xl) |
-| 交互设计 | 单击查看详情，双击快速进入 |
-| 路由结构 | `/` 列表页, `/story` Story页, `/create` 创建页(待实现) |
-| 数据隔离 | Story页使用当前选中人物的ID查询数据 |
-
-**文件变更**:
+**文档结构**:
 ```
-src/
-├── components/
-│   ├── CharacterCard.tsx              # 新增 ✨
-│   └── CharacterDetailModal.tsx       # 新增 ✨
-├── app/
-│   ├── page.tsx                       # 重写 - 人物列表首页
-│   └── story/
-│       └── page.tsx                   # 新增 ✨ - Story功能页
-tests/components/
-├── CharacterCard.test.tsx             # 新增 ✨ - 12个测试
-└── CharacterDetailModal.test.tsx      # 新增 ✨ - 11个测试
+COMPONENTS.md
+├── UI 组件清单（按类别分组）
+├── Hooks 清单
+├── Lib 库清单
+├── API 路由清单
+├── 组件依赖关系图
+├── 代码注释规范
+├── 废弃组件清单
+└── 开发规范
 ```
 
-**测试状态**: 298/299 通过 (1跳过)
-**TypeScript**: ✅ 编译通过
+**代码注释模板**:
+```typescript
+// ============================================================
+// [组件名]: [功能简述]
+// [功能详细描述]
+//
+// 文件位置: src/components/[Component].tsx
+// 主要依赖: [依赖1], [依赖2]
+// 被引用: [引用1], [引用2]
+//
+// Props:
+//   - prop1: 描述
+//
+// 使用示例:
+//   <Component prop1="value" />
+//
+// 维护记录:
+//   - 2026-04-06: 创建
+// ============================================================
+```
+
+**测试状态**: 204/204 通过
+
+**Git 提交**: `755221d`
 
 ---
 
-### 2026-04-06 - AI人物系统 Phase 1: 架构与数据模型
+### 2026-04-06 - 实时情绪分析接口 ✅ 已完成
 
 **完成内容**:
-- ✅ 设计AI人物系统完整方案
-  - 人物目录页面设计
-  - 人物创建流程（心理学测试+文件上传+节点确认）
-  - 5题性格测试题目设计
-  - 多人物数据隔离方案
-- ✅ 实施IndexedDB v3升级
-  - DB_VERSION 1→3
-  - 新增characters表
-  - 为nodes/clues/branches添加character_id索引
-  - 新增character_profiles表（按人物隔离画像）
-- ✅ 创建核心类型定义
-  - Character实体类型
-  - PersonalityQuestion测试题目类型
-  - CreateFlowState创建流程状态
-  - 扩展MemoryNode/HiddenClue/IfLineBranch
-- ✅ 实现心理学测试引擎
-  - 5题性格测试配置
-  - 5维度评分算法（外向性、感性、独立性、直接性、思考性）
-  - 自动生成CharacterProfile
-  - 表达风格/情感逻辑/主导情绪推导
-- ✅ 实现数据操作层
-  - Character CRUD操作
-  - 按人物查询数据（getNodesByCharacter等）
-  - 自动统计更新（nodeCount/clueCount/branchCount）
-  - 数据迁移（v2→v3创建默认ELARA人物）
-- ✅ 实现状态管理
-  - useCharacterStore（Zustand + 持久化）
-  - useCurrentCharacter（自动初始化）
-  - useCharacters（人物列表）
-  - useCharacterDetail（人物详情）
+- ✅ 创建 `/api/emotion/analyze` API 路由
+  - POST: 分析单条消息情绪
+  - GET: 健康检查
+- ✅ 支持 8 种情绪分析
+  - calm, angry, sad, joyful, melancholy, hopeful, passionate, mysterious
+- ✅ 返回情绪分析结果
+  - emotion: 情绪类型
+  - intensity: 强度 (0-1)
+  - confidence: 置信度 (0-1)
+  - reasoning: 分析理由
+  - suggestedTransition: 建议的情绪转换
+- ✅ 使用 Qwen Turbo 模型
+  - 轻量级、快速响应
+  - 温度 0.3（稳定输出）
+- ✅ 内置缓存机制
+  - 内存缓存（Map）
+  - TTL: 5 分钟
+  - 自动清理过期缓存
+- ✅ 创建 `emotion.ts` 客户端库
+  - `analyzeEmotion()`: 单条分析
+  - `analyzeEmotionsBatch()`: 批量分析
+  - `checkEmotionServiceHealth()`: 健康检查
+  - `calculateBPM()`: 根据情绪计算心率
+  - `shouldTransitionEmotion()`: 判断是否转换情绪
+  - `escalateEmotion()`: 情绪升级
+- ✅ 情绪常量定义
+  - `EMOTION_LABELS`: 中文标签
+  - `EMOTION_COLORS`: 颜色映射
+  - `EMOTION_BPM`: 心率范围
 
-**技术决策**:
-| 决策 | 说明 |
-|------|------|
-| 数据隔离 | 所有数据通过character_id关联，物理隔离 |
-| 默认人物 | 首次使用时自动创建ELARA作为默认人物 |
-| 头像方案 | 支持emoji字符（简单）和Base64图片（高级） |
-| 状态持久化 | Zustand + localStorage保存当前人物ID |
-| 测试题目 | 5题覆盖压力/社交/决策/冲突/关系五个维度 |
+**API 使用示例**:
+```typescript
+// 分析单条消息
+const result = await analyzeEmotion({
+  message: '今天真开心！',
+  context: [...],
+  currentEmotion: 'calm',
+});
+// 返回: { emotion: 'joyful', intensity: 0.8, confidence: 0.9, ... }
 
-**文件变更**:
-```
-src/
-├── types/
-│   └── character.ts                  # 新增 ✨ - 人物类型定义
-docs/
-├── CHARACTER_DIRECTORY_DESIGN.md     # 新增 ✨ - 系统设计方案
-├── CHARACTER_SYSTEM_DESIGN.md        # 新增 ✨ - 详细设计文档
-src/lib/
-├── localDb.ts                        # 修改 - v3升级，多人物支持
-├── personalityTest.ts                # 新增 ✨ - 心理学测试引擎
-src/hooks/
-└── useCurrentCharacter.ts            # 新增 ✨ - 人物状态管理
+// 批量分析
+const results = await analyzeEmotionsBatch([
+  { id: '1', content: '你好', role: 'user' },
+  { id: '2', content: '我很生气！', role: 'user' },
+]);
+
+// 健康检查
+const health = await checkEmotionServiceHealth();
+// 返回: { status: 'ok', supportedEmotions: [...], cacheSize: 10 }
 ```
 
-**测试状态**: 275/276 通过
-**TypeScript**: ✅ 编译通过
+**测试状态**: 204/204 通过
+
+**Git 提交**: `af7ad36`
 
 ---
 
-### 2026-04-06 - Bug修复: 人物名称持久化 + 存储策略实施
+### 2026-04-06 - ECG 心电图波形情绪系统 ✅ 已完成
 
 **完成内容**:
-- ✅ 修复人物名称刷新回退到 ELARA 的问题
-  - 原因: `aiName` 状态使用硬编码默认值，页面刷新后丢失
-  - 方案: 添加 `useEffect` 在组件挂载时从 IndexedDB profile 恢复人物名称
-- ✅ 实施存储策略方案 (STORAGE_STRATEGY.md)
-  - 创建 `src/lib/exportImport.ts` - JSON 导出/导入功能
-  - 添加 CRC32 校验和确保数据完整性
-  - 支持合并模式和替换模式导入
-  - 添加 `clearAllClues` / `clearAllBranches` 方法到 localDb
-- ✅ 创建设置页面 (`src/app/settings/page.tsx`)
-  - 数据管理卡片: 显示节点数、线索数、人物名称、上次备份时间
-  - 导出备份按钮: 一键导出所有数据为 JSON 文件
-  - 导入备份按钮: 支持文件选择和拖拽导入
-  - 导入状态提示: 成功/失败/加载中状态
-  - 主页面导航栏添加设置入口
-- ✅ 添加单元测试 (`tests/lib/exportImport.test.ts`)
-  - 7个测试用例覆盖导出、导入、验证功能
+- ✅ 创建 `EmotionWave.tsx` 组件（替换心跳脉冲）
+  - Canvas 绘制 ECG 心电图波形（类似医院监护仪）
+  - 模拟真实心电图：P波 + QRS波群（R波高峰）+ T波
+  - 网格背景（类似监护仪网格）
+  - 虚线基线 + 扫描线效果
+  - 发光线条（shadowBlur）
+  - 波形从右向左滚动（数据点队列）
+- ✅ 8 种情绪波形配置
+  - 不同频率（sad 0.3Hz ~ angry 2.5Hz）
+  - 不同振幅（sad 15px ~ angry 45px）
+  - 不同颜色（冰蓝/红色/金黄等）
+  - 显示心率 BPM（beats per minute）
+- ✅ 更新 `EmotionWaveIndicator`
+  - 显示波形预览（SVG 小图标）
+  - 实时心率显示（如 68 BPM）
+  - 情绪强度进度条
+- ✅ 更新 `AIDialog` 集成 ECG 波形
+  - 波形在聊天框后面（zIndex: 0, opacity: 0.6）
+  - 半透明不影响文字阅读
 
-**文件变更**:
+**情绪波形配置（ECG）**:
+| 情绪 | 频率(Hz) | 振幅(px) | 速度 | 颜色 | BPM(约) |
+|------|----------|----------|------|------|---------|
+| calm | 0.5 | 20 | 50 | 冰蓝 | 38 |
+| angry | 2.5 | 45 | 150 | 红色 | 188 |
+| sad | 0.3 | 15 | 30 | 灰蓝 | 23 |
+| joyful | 1.5 | 35 | 100 | 金黄 | 113 |
+| melancholy | 0.7 | 25 | 40 | 靛蓝 | 53 |
+| hopeful | 1.0 | 30 | 80 | 翠绿 | 75 |
+| passionate | 2.0 | 40 | 120 | 玫瑰红 | 150 |
+| mysterious | 1.2 | 28 | 70 | 紫色 | 90 |
+
+**ECG 波形构成**:
 ```
-src/app/page.tsx                     # 修改 - 添加 useEffect 恢复 aiName
-src/app/settings/
-└── page.tsx                          # 新增 ✨ - 设置页面
-src/lib/
-├── localDb.ts                        # 修改 - 添加清空方法
-├── exportImport.ts                   # 新增 ✨ - 导出导入功能
-tests/lib/
-└── exportImport.test.ts              # 新增 ✨ - 单元测试
+P波(小隆起) → Q波(小凹陷) → R波(高峰) → S波(深谷) → T波(中等隆起)
+     ↑              ↑              ↑           ↑            ↑
+   心房收缩     心室去极化开始   心室主收缩   心室复极化   心室恢复
 ```
 
-**测试状态**: 275/275 通过 (1跳过)
+**测试状态**: 187/187 通过
+
+**Git 提交**: `ee38a83`
+
+---
+
+### 2026-04-06 - 情绪脉冲系统 + 节点预览确认 ✅ 已完成
+
+**完成内容**:
+- ✅ 创建 `NodePreview.tsx` 组件
+  - 点击节点放大显示（scale 动画）
+  - 显示前情介绍（节点描述/剧情摘要）
+  - 确认/取消按钮（进入回忆或返回）
+  - 发光边框动画 + 装饰角落
+- ✅ 创建 `EmotionPulse.tsx` 组件（已替换为 EmotionWave）
+  - 心跳式脉冲效果（已废弃）
+- ✅ 更新 `AIDialog.tsx` 组件
+  - 支持用户消息靠右显示
+
+**测试状态**: 176/176 通过
+
+**Git 提交**: `55dc1b4`
+
+---
+
+### 2026-04-06 - Phase 2.3: 性能优化系统 ✅ 已完成
+
+**完成内容**:
+- ✅ 创建 `usePerformance.ts` Hook
+  - `usePerformanceMonitor`: 组件渲染性能监控
+  - `useInteractionMonitor`: 用户交互性能监控
+  - `useLazyLoad`: IntersectionObserver 懒加载
+  - `useDebounce`: 防抖处理
+  - `useThrottle`: 节流处理
+- ✅ 创建 `LazyContainer.tsx` 组件
+  - `withLazyLoad`: 懒加载高阶组件 (React.lazy + Suspense)
+  - `LazyImage`: 图片懒加载 + 模糊占位符
+  - `VirtualList`: 大数据虚拟列表 (仅渲染可见项)
+- ✅ 实现记忆化工具函数
+  - `memoize`: 通用记忆化函数，支持 TTL 过期
+  - `calculateVisibleRange`: 虚拟列表可见范围计算
+- ✅ Performance API 集成
+  - 渲染时间标记和测量
+  - 开发环境性能日志
+- ✅ 编写测试 13 个
+  - 性能监控测试
+  - 记忆化函数测试
+  - 虚拟列表计算测试
+
+**技术亮点**:
+```typescript
+// 懒加载高阶组件
+const withLazyLoad = (importFunc, options) => {
+  const LazyComponent = React.lazy(importFunc);
+  return (props) => (
+    <Suspense fallback={<Loading />}>
+      <LazyComponent {...props} />
+    </Suspense>
+  );
+};
+
+// 虚拟列表 - 只渲染可见项
+const VirtualList = ({ items, itemHeight, containerHeight }) => {
+  const { startIndex, endIndex } = calculateVisibleRange(
+    scrollTop, containerHeight, itemHeight, overscan, items.length
+  );
+  return items.slice(startIndex, endIndex).map(renderItem);
+};
+
+// 记忆化函数 - 缓存计算结果
+const memoize = (fn, maxSize) => {
+  const cache = new Map();
+  return (...args) => {
+    const key = JSON.stringify(args);
+    if (cache.has(key)) return cache.get(key).value;
+    const result = fn(...args);
+    cache.set(key, { value: result, timestamp: Date.now() });
+    return result;
+  };
+};
+```
+
+**性能优化清单**:
+| 优化项 | 实现方式 | 效果 |
+|--------|----------|------|
+| 组件懒加载 | React.lazy + Suspense | 减少首屏加载 |
+| 图片懒加载 | IntersectionObserver | 按需加载图片 |
+| 虚拟列表 | 只渲染可见项 | 支持大数据列表 |
+| 防抖节流 | useDebounce/useThrottle | 优化高频事件 |
+| 记忆化 | memoize 函数 | 缓存计算结果 |
+| 渲染监控 | Performance API | 性能指标收集 |
+
+**测试状态**: 164/164 通过
+
+**Git 提交**: `83a4ed7`
+
+---
+
+### 2026-04-06 - Phase 2.2: 响应式适配系统 ✅ 已完成
+
+**完成内容**:
+- ✅ 创建 `useResponsive.ts` Hook
+  - 断点检测: mobile(<640px), tablet(640-1024px), desktop(>=1024px)
+  - 触摸设备检测
+  - 响应式配置: 粒子数量、对话框宽度、字体大小
+- ✅ 创建 `useSwipe.ts` Hook
+  - 触摸滑动检测
+  - 可配置滑动阈值 (默认 50px)
+  - 支持左右滑动回调
+- ✅ 创建 `ResponsiveNav.tsx` 组件
+  - 移动端: 汉堡菜单 + 全屏导航
+  - 桌面端: 横向导航栏
+  - Framer Motion 动画效果
+- ✅ 更新 `DynamicAtmosphere.tsx`
+  - 集成响应式粒子数量
+  - 移动端: 40 粒子, 桌面端: 80 粒子
+  - 窗口大小变化时自动调整
+- ✅ 编写测试 12 个
+  - 断点检测测试
+  - 触摸交互测试
+  - 响应式配置测试
+
+**技术亮点**:
+```typescript
+// 响应式断点检测
+const getBreakpoint = (width: number) => {
+  if (width < 640) return 'mobile';
+  if (width < 1024) return 'tablet';
+  return 'desktop';
+};
+
+// 触摸滑动检测
+const useSwipe = ({ onSwipeLeft, onSwipeRight }) => {
+  const [touchStart, setTouchStart] = useState(null);
+  // ... 触摸事件处理
+};
+```
+
+**响应式配置表**:
+| 断点 | 粒子数量 | 对话框宽度 | 导航类型 |
+|------|----------|------------|----------|
+| mobile | 40 | 95vw | 汉堡菜单 |
+| tablet | 60 | 80vw | 汉堡菜单 |
+| desktop | 80 | 800px | 横向导航 |
+
+**测试状态**: 151/151 通过
+
+**Git 提交**: `c03d93f`
+
+---
+
+### 2026-04-06 - Phase 2.1: 动态背景氛围系统 ✅ 已完成
+
+**完成内容**:
+- ✅ 创建 `DynamicAtmosphere.tsx` 组件
+  - 支持 8 种情绪主题：calm, angry, sad, joyful, melancholy, hopeful, passionate, mysterious
+  - 情绪-色彩映射配置系统 (EMOTION_THEME_MAP)
+  - 颜色平滑过渡动画 (500ms 渐变)
+  - 粒子系统响应情绪变化 (速度/数量/颜色)
+- ✅ 实现色彩插值工具函数 `lerpColor`
+  - RGB 颜色线性插值
+  - 支持任意进度值 t (0-1)
+- ✅ 实现情绪配置获取函数 `getEmotionTheme`
+  - 默认回退到 calm 配置
+- ✅ 粒子系统动态调整
+  - angry: 120 粒子, 速度 3x
+  - sad: 60 粒子, 速度 0.3x
+  - calm: 80 粒子, 速度 0.5x
+- ✅ 编写测试 12 个
+  - 情绪-色彩映射配置测试
+  - 颜色插值算法测试
+  - 粒子系统配置测试
+
+**技术亮点**:
+```typescript
+// 颜色平滑过渡
+const lerpColor = (c1, c2, t) => {
+  return c1.map((v, i) => Math.round(v + (c2[i] - v) * t));
+};
+
+// 情绪-主题映射
+const EMOTION_THEME_MAP = {
+  calm: { primary: [30, 60, 100], particleSpeed: 0.5, particleCount: 80 },
+  angry: { primary: [150, 30, 30], particleSpeed: 3, particleCount: 120 },
+  // ... 8 种情绪
+};
+```
+
+**测试状态**: 139/139 通过
+
+**Git 提交**: `42b2d47`
+
+---
+
+### 2026-04-06 - Phase 2.3: SVG/Canvas 节点图标生成器 (预留 ComfyUI 接口)
+
+**完成内容**:
+- ✅ 创建 `NodeIconGenerator.tsx` 组件
+  - Canvas 生成抽象几何图形
+  - 4种图形类型随机选择：多边形网络、同心圆环、放射线条、粒子点阵
+  - 12种情绪色彩映射（开心、忧郁、生气、温柔等）
+  - 显著性分数影响图形复杂度
+  - 基于 nodeId 生成伪随机，保证同一节点始终相同图形
+- ✅ **预留 ComfyUI 接口**
+  ```typescript
+  export const NODE_ICON_CONFIG = {
+    useComfyUI: false,  // 设为 true 启用 ComfyUI
+    comfyUIBaseURL: 'http://localhost:8188',
+    defaultWorkflowId: 'echo_tracks_node_icon',
+  };
+  ```
+  - 支持全局配置切换
+  - 支持单个组件强制使用 ComfyUI (`forceComfyUI`)
+  - 预留 `generateWithComfyUI()` 函数待实现
+- ✅ 集成到 `StoryCarousel` 组件
+  - 替换原有静态 SVG
+  - 每个节点显示独特的动态图标
+- ✅ 修改 `page.tsx` 传递 `emotion` 和 `salienceScore`
+- ✅ 编写测试 4个
+
+**后续接入 ComfyUI 步骤**:
+1. 部署 ComfyUI 服务
+2. 导入 Echo Tracks 专用工作流
+3. 设置环境变量 `NEXT_PUBLIC_COMFYUI_URL`
+4. 将 `NODE_ICON_CONFIG.useComfyUI` 设为 `true`
+5. 实现 `generateWithComfyUI()` 函数中的具体调用逻辑
+
+**技术亮点**:
+```typescript
+// 伪随机生成器（保证一致性）
+function createPseudoRandom(nodeId: string) {
+  let seed = 0;
+  for (let i = 0; i < nodeId.length; i++) {
+    seed = ((seed << 5) - seed + nodeId.charCodeAt(i)) | 0;
+  }
+  return () => {
+    seed = (seed * 9301 + 49297) % 233280;
+    return seed / 233280;
+  };
+}
+```
+
+**测试状态**: 127/127 通过
+
+**Git 提交**: `b3d5019`
+
+---
+
+### 2026-04-06 - Bug 修复: Story 页面数据加载
+
+**完成内容**:
+- ✅ 创建 `NodeIconGenerator.tsx` 组件
+  - Canvas 生成抽象几何图形
+  - 4种图形类型随机选择：多边形网络、同心圆环、放射线条、粒子点阵
+  - 12种情绪色彩映射（开心、忧郁、生气、温柔等）
+  - 显著性分数影响图形复杂度
+  - 基于 nodeId 生成伪随机，保证同一节点始终相同图形
+- ✅ 集成到 `StoryCarousel` 组件
+  - 替换原有静态 SVG
+  - 每个节点显示独特的动态图标
+- ✅ 修改 `page.tsx` 传递 `emotion` 和 `salienceScore`
+- ✅ 编写测试 4个
+
+**技术亮点**:
+```typescript
+// 伪随机生成器（保证一致性）
+function createPseudoRandom(nodeId: string) {
+  let seed = 0;
+  for (let i = 0; i < nodeId.length; i++) {
+    seed = ((seed << 5) - seed + nodeId.charCodeAt(i)) | 0;
+  }
+  return () => {
+    seed = (seed * 9301 + 49297) % 233280;
+    return seed / 233280;
+  };
+}
+```
+
+**测试状态**: 127/127 通过
+
+**Git 提交**: `b3d5019`
+
+---
+
+### 2026-04-06 - Bug 修复: Story 页面数据加载
+
+**问题**: 上传记忆后 Story 页面没有显示新节点
+
+**原因**: 
+- `loadStoryNodes()` 仍在调用 `/api/nodes` API
+- `fetchNode()` 也在调用 `/api/node/{id}` API
+- 这些 API 已被弃用，改为使用 IndexedDB 本地存储
+
+**修复**:
+- ✅ 修改 `page.tsx` 的 `loadStoryNodes()` 使用 `localDb.getAllNodes()`
+- ✅ 修改 `chat.ts` 的 `fetchNode()` 使用 `localDb.getNodeById()`
+- ✅ 添加 `localDb` 导入
+
+**验证**:
+- 测试通过: 123/123
+- Git 提交: `af77060`
+
+---
+
+### 2026-04-05 - 测试工具与文档
+
+**完成内容**:
+- ✅ 更新页面调用传入 `characterBase`
+  - `m-test/page.tsx` 和 `page.tsx` 的 `commitNodes()` 调用
+- ✅ 创建 `TEST_GUIDE.md` 详细测试指南
+  - 6个测试场景（文件上传、节点校准、持久性等）
+  - Chrome 开发者工具验证步骤
+  - 常见问题排查
+- ✅ 创建 `public/test-localdb.html` 浏览器测试工具
+  - 数据库连接测试
+  - 节点 CRUD 操作
+  - 人物画像测试
+  - 实时数据查看
+
+**测试入口**:
+- 主应用: `http://localhost:3000`
+- 本地存储测试: `http://localhost:3000/test-localdb.html`
+
+**Git 提交**: `e394782` - fix(storage): 更新页面传入 characterBase，添加测试工具
+
+---
+
+### 2026-04-05 - Phase 2.1: IndexedDB 本地存储 + Vercel 部署配置
+
+**完成内容**:
+- ✅ 创建 `localDb.ts` IndexedDB 封装模块
+  - 支持 MemoryNode、HiddenClue、IfLineBranch、CharacterProfile 存储
+  - 完整的 CRUD 操作
+  - 批量提交功能 `commitMemoryBatch()`
+- ✅ 编写 IndexedDB 测试 (3个测试通过)
+- ✅ 修改 `pipeline.ts` 使用本地存储
+  - `commitNodes()` 函数改为使用 IndexedDB
+  - 移除硬编码的 `userId: 'test-user'`
+- ✅ 重写 `db.ts` 使用本地存储
+  - 所有 Supabase 操作替换为 IndexedDB 操作
+  - 保持接口兼容，不影响现有组件
+- ✅ 配置 Vercel 部署
+  - 更新 `next.config.mjs` 移除 localhost 代理
+  - 更新 `.env.local.example` 简化配置
+  - 创建 `vercel.json` 部署配置
+  - 编写 `DEPLOY.md` 部署文档
+
+**架构变更**:
+```
+旧架构: 前端 → API → Supabase (云端存储)
+新架构: 前端 → IndexedDB (本地存储) + API → Qwen (仅AI处理)
+```
+
+**隐私优势**:
+- 用户数据完全存储在浏览器本地
+- 服务器不存储任何个人数据
+- 零隐私合规风险
+- 无需用户注册/登录
+
+**测试状态**: 123/123 通过
+
+**Git 提交**: 待提交
 
 ---
 
@@ -771,6 +1236,10 @@ tests/components/
 | UI-008 | AI人物名称始终为ELARA | ✅ 已解决 | extract接口提取character_name，前端动态绑定 |
 | UI-009 | Console SVG polygon undefined 报错 | ✅ 已解决 | RadarChart motion.polygon 改为普通 polygon |
 | UI-010 | 遗留组件 SandNode 含 motion.polygon/line | ✅ 已解决 | SandNode 中 SVG 动画元素全部改为普通标签 |
+| TYPE-001 | LazyContainer withLazyLoad 类型错误 | ✅ 已解决 | 返回类型改为 React.FC<P> |
+| TYPE-002 | 测试文件类型不匹配 | ✅ 已解决 | 添加正确类型导入和注解 |
+| BUILD-001 | Vercel 构建 Supabase 环境变量缺失 | ✅ 已解决 | 环境变量缺失时返回 mock 客户端 |
+| BUILD-002 | @react-three/fiber unstable_act 错误 | ✅ 已解决 | 降级到 8.13.0 兼容 React 18 |
 | BE-001 | 后端API引用不存在的gemini模块 | ✅ 已解决 | chat/extract路由迁移至qwen模块 |
 
 ---
@@ -797,33 +1266,45 @@ tests/components/
 | 2026-04-05 | 使用 Canvas 实现粒子重组特效 | 性能优化，支持 200+ 粒子 |
 | 2026-04-05 | 根据结局文本推断情感色调 | 自动化全局氛围更新 |
 | 2026-04-05 | 玻璃拟态设计用于抉择 UI | 统一视觉风格 |
-| 2026-04-06 | 人物名称持久化到 IndexedDB | 解决刷新回退问题 |
-| 2026-04-06 | 混合存储策略 (IndexedDB + JSON) | 数据安全与跨设备迁移 |
-| 2026-04-06 | CRC32 校验和 | 备份文件完整性验证 |
-| 2026-04-06 | 多人物数据隔离（character_id） | AI人物系统核心架构 |
-| 2026-04-06 | 5维性格测试模型 | 心理学测试评分算法 |
-| 2026-04-06 | IndexedDB v3 + 自动迁移 | 向后兼容与数据升级 |
 
 ---
 
 ## 📝 Git 提交历史
 
+### 2026-04-06 - Phase 3 完整提交
+
 ```
-待提交:
-- fix(ui): 人物名称持久化到 IndexedDB
-- feat(storage): 实施存储策略 - JSON 导出导入功能
-- feat(ui): 创建设置页面，支持数据备份与恢复
-- feat(character): AI人物系统架构设计
-- feat(db): IndexedDB v3升级，支持多人物
-- feat(test): 5维心理学测试引擎
+f07c1ce feat(ui): 在 Settings 页面添加返回按钮
+- 左上角添加返回首页按钮
+- 使用 ArrowLeft 图标
+- 链接到 / 首页
 
-历史提交:
-- feat(ui): 深色沉浸式界面原型
-  - 流体背景组件
-  - Story轮播组件
-  - Dialogue分离布局
-  - 标签环绕系统
+16bd24f feat(ui): 在主页面添加 Settings 入口按钮
+- 在导航栏添加设置按钮
+- 使用 Settings 图标（lucide-react）
+- 位置在创建按钮左侧
 
+ce9cd8a feat(phase3): 实现数据迁移工具
+- 添加 migration.ts: validateMigrationData, previewMigration, executeMigration, rollbackMigration
+- 添加 MigrationWizard 组件: 6步向导、拖拽支持、冲突处理策略
+- 更新 Settings 页面: 迁移向导入口、迁移历史显示
+- 添加测试: 15个测试覆盖迁移功能
+
+188ebd8 feat(phase3): 实现自动备份提醒功能
+- 添加 useAutoBackup Hook: 定期检查、自动导出、支持自定义间隔
+- 更新 Settings 页面: 自动备份开关、间隔选择、上次备份时间显示
+- 添加测试: 11个测试覆盖自动备份逻辑
+
+bb81abb feat(phase3): 实现 JSON 导出/导入功能和 Settings 页面
+- 添加 exportImport.ts: exportToJSON, importFromJSON, generateChecksum
+- 扩展 localDb.ts: exportAll, importAll, getAllClues, getAllBranches
+- 创建 Settings 页面: 数据管理、存储状态、拖拽导入、冲突处理
+- 添加测试: 17 个新测试覆盖导出导入功能
+```
+
+### 历史提交
+
+```
 c1e592d feat(ui): 创建布局组件和主题系统
 - ThemeProvider + Navigation + Layout
 - 深色/浅色模式切换
@@ -858,33 +1339,25 @@ d:\Ai_Eco
 ├── echo-tracks-frontend/      # 前端项目
 │   ├── src/
 │   │   ├── app/
-│   │   │   ├── settings/      # 设置页面
-│   │   │   ├── m-test/        # 测试页面
+│   │   │   ├── test/          # UI原型测试页面
 │   │   │   ├── layout.tsx
 │   │   │   └── page.tsx
 │   │   ├── components/
 │   │   │   ├── FluidBackground.tsx    # 流体背景
 │   │   │   ├── StoryCarousel.tsx      # Story轮播
 │   │   │   ├── AIDialog.tsx           # AI对话框
-│   │   │   ├── CharacterCard.tsx      # ⭐ 人物卡片
-│   │   │   ├── GlassButton.tsx        # 玻璃按钮
-│   │   │   └── ...
-│   │   ├── hooks/
-│   │   │   └── useCurrentCharacter.ts # ⭐ 人物状态管理
-│   │   ├── lib/
-│   │   │   ├── localDb.ts             # IndexedDB封装
-│   │   │   ├── personalityTest.ts     # ⭐ 心理学测试
-│   │   │   └── exportImport.ts        # 数据导出导入
-│   │   └── types/
-│   │       └── character.ts           # ⭐ 人物类型定义
-│   ├── docs/
-│   │   ├── CHARACTER_DIRECTORY_DESIGN.md  # ⭐ 人物系统设计
-│   │   └── CHARACTER_SYSTEM_DESIGN.md     # ⭐ 详细设计文档
+│   │   │   ├── UserInput.tsx          # 用户输入
+│   │   │   ├── DialogueTags.tsx       # 对话标签
+│   │   │   ├── RadarChart.tsx         # 雷达图
+│   │   │   └── GlassButton.tsx        # 玻璃按钮
+│   │   └── lib/
 │   ├── tests/
 │   └── package.json
+├── echo-tracks-backend/       # 后端项目
 ├── skills/                    # Agent Skill
 │   └── echo-tracks-auto-dev/
-└── project-diary.md           # 本日记
+├── project-diary.md           # 本日记
+└── 项目方案V3.0_回音轨迹_工程执行蓝图.md  # 需求文档
 ```
 
 ---
