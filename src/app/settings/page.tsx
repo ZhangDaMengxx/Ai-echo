@@ -14,6 +14,7 @@
 // 维护记录:
 //   - 2026-04-06: 创建
 //   - 2026-04-06: 添加自动备份功能
+//   - 2026-04-06: 添加数据迁移向导
 // ============================================================
 
 'use client';
@@ -24,6 +25,8 @@ import { exportToJSON, importFromJSON, validateBackupFile, ImportResult } from '
 import { localDb } from '@/lib/localDb';
 import { GlassButton } from '@/components/GlassButton';
 import { useAutoBackup, getLastAutoBackupTime } from '@/hooks/useAutoBackup';
+import { MigrationWizard } from '@/components/MigrationWizard';
+import { getMigrationHistory } from '@/lib/migration';
 
 interface StorageStats {
 	nodes: number;
@@ -49,6 +52,8 @@ export default function SettingsPage() {
 	const [autoBackupEnabled, setAutoBackupEnabled] = useState(false);
 	const [autoBackupInterval, setAutoBackupInterval] = useState(7);
 	const [lastAutoBackup, setLastAutoBackup] = useState<number | null>(null);
+	const [showMigrationWizard, setShowMigrationWizard] = useState(false);
+	const [migrationHistory, setMigrationHistory] = useState<any[]>([]);
 
 	// 启用自动备份 Hook
 	useAutoBackup({ enabled: autoBackupEnabled, intervalDays: autoBackupInterval });
@@ -60,6 +65,7 @@ export default function SettingsPage() {
 		setAutoBackupEnabled(enabled);
 		setAutoBackupInterval(interval);
 		setLastAutoBackup(getLastAutoBackupTime());
+		setMigrationHistory(getMigrationHistory());
 	}, []);
 
 	// 加载存储统计
@@ -404,11 +410,70 @@ export default function SettingsPage() {
 					</div>
 				</motion.div>
 
-				{/* 关于卡片 */}
+				{/* 数据迁移卡片 */}
 				<motion.div
 					initial={{ opacity: 0, y: 20 }}
 					animate={{ opacity: 1, y: 0 }}
 					transition={{ delay: 0.4 }}
+					className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6"
+				>
+					<h2 className="text-xl font-light mb-6 flex items-center gap-2">
+						<span>🚚</span>
+						<span>数据迁移</span>
+						<span className="text-xs px-2 py-0.5 bg-blue-500/20 text-blue-400 rounded-full">新功能</span>
+					</h2>
+
+					<p className="text-white/50 text-sm mb-6">
+						使用迁移向导从其他设备导入数据，或合并多个备份文件。
+						支持冲突检测和智能合并。
+					</p>
+
+					<div className="flex flex-wrap gap-4 mb-6">
+						<GlassButton onClick={() => setShowMigrationWizard(true)}>
+							🚀 打开迁移向导
+						</GlassButton>
+					</div>
+
+					{/* 迁移历史 */}
+					{migrationHistory.length > 0 && (
+						<div className="mt-4 pt-4 border-t border-white/10">
+							<div className="text-sm text-white/50 mb-3">最近迁移记录</div>
+							<div className="space-y-2">
+								{migrationHistory.slice(0, 3).map((record) => (
+									<div
+										key={record.id}
+										className="flex items-center justify-between text-sm"
+									>
+										<span className="text-white/70">
+											{new Date(record.timestamp).toLocaleDateString('zh-CN')}
+										</span>
+										<span
+											className={`text-xs px-2 py-0.5 rounded ${
+												record.result === 'success'
+													? 'bg-green-500/20 text-green-400'
+													: record.result === 'rolled_back'
+														? 'bg-yellow-500/20 text-yellow-400'
+														: 'bg-red-500/20 text-red-400'
+											}`}
+										>
+											{record.result === 'success'
+												? '成功'
+												: record.result === 'rolled_back'
+													? '已回滚'
+														: '失败'}
+										</span>
+									</div>
+								))}
+							</div>
+						</div>
+					)}
+				</motion.div>
+
+				{/* 关于卡片 */}
+				<motion.div
+					initial={{ opacity: 0, y: 20 }}
+					animate={{ opacity: 1, y: 0 }}
+					transition={{ delay: 0.5 }}
 					className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6"
 				>
 					<h2 className="text-xl font-light mb-4 flex items-center gap-2">
@@ -475,6 +540,44 @@ export default function SettingsPage() {
 									取消
 								</button>
 							</div>
+						</motion.div>
+					</motion.div>
+				)}
+			</AnimatePresence>
+
+			{/* 迁移向导弹窗 */}
+			<AnimatePresence>
+				{showMigrationWizard && (
+					<motion.div
+						initial={{ opacity: 0 }}
+						animate={{ opacity: 1 }}
+						exit={{ opacity: 0 }}
+						className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+					>
+						<motion.div
+							initial={{ scale: 0.9, opacity: 0 }}
+							animate={{ scale: 1, opacity: 1 }}
+							exit={{ scale: 0.9, opacity: 0 }}
+							className="bg-[#0a0a0f] border border-white/20 rounded-2xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+						>
+							<div className="flex items-center justify-between mb-6">
+								<h3 className="text-2xl font-light">数据迁移向导</h3>
+								<button
+									onClick={() => setShowMigrationWizard(false)}
+									className="text-white/50 hover:text-white/80 text-2xl"
+								>
+									×
+								</button>
+							</div>
+
+							<MigrationWizard
+								onComplete={() => {
+									setShowMigrationWizard(false);
+									loadStats();
+									setMigrationHistory(getMigrationHistory());
+								}}
+								onCancel={() => setShowMigrationWizard(false)}
+							/>
 						</motion.div>
 					</motion.div>
 				)}
