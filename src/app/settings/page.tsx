@@ -21,6 +21,8 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { ArrowLeft } from 'lucide-react';
+import Link from 'next/link';
 import { exportToJSON, importFromJSON, validateBackupFile, ImportResult } from '@/lib/exportImport';
 import { localDb } from '@/lib/localDb';
 import { GlassButton } from '@/components/GlassButton';
@@ -209,6 +211,20 @@ export default function SettingsPage() {
 	return (
 		<div className="min-h-screen bg-[#0a0a0f] text-white p-8">
 			<div className="max-w-4xl mx-auto space-y-8">
+				{/* 返回按钮 */}
+				<div className="absolute top-6 left-6">
+					<Link href="/">
+						<motion.button
+							className="w-10 h-10 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-white hover:bg-white/20 transition-colors"
+							whileHover={{ scale: 1.05 }}
+							whileTap={{ scale: 0.95 }}
+							aria-label="返回首页"
+						>
+							<ArrowLeft className="w-5 h-5" />
+						</motion.button>
+					</Link>
+				</div>
+
 				{/* 标题 */}
 				<motion.div
 					initial={{ opacity: 0, y: -20 }}
